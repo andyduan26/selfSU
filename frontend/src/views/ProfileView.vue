@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, watchEffect } from 'vue'
+import { computed, reactive, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
@@ -9,6 +9,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { user, teacherStatus, loading, error } = storeToRefs(authStore)
 const isTeacher = computed(() => teacherStatus.value?.is_teacher)
+const orders = ref([])
 
 const form = reactive({
   nickname: '',
@@ -26,6 +27,9 @@ watchEffect(() => {
 
 authStore.fetchMe()
 authStore.fetchTeacherStatus()
+authStore.fetchMyOrders().then((data) => {
+  orders.value = data
+})
 
 async function submitProfile() {
   await authStore.updateProfile(form)
@@ -90,6 +94,17 @@ function logout() {
         <p v-if="error" class="form-error">{{ error }}</p>
         <button type="submit" :disabled="loading">{{ loading ? '保存中' : '保存资料' }}</button>
       </form>
+    </section>
+
+    <section class="orders-panel">
+      <h2>我的订单</h2>
+      <article v-for="order in orders" :key="order.id" class="order-item">
+        <div>
+          <strong>{{ order.course_title }}</strong>
+          <span>{{ order.order_no }} / {{ order.amount }} / {{ order.pay_status }}</span>
+        </div>
+        <RouterLink class="inline-button" :to="`/courses/${order.course}`">查看课程</RouterLink>
+      </article>
     </section>
   </main>
 </template>

@@ -182,9 +182,27 @@ class TeacherCourseSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    course_title = serializers.CharField(source='course.title', read_only=True)
+    course_cover = serializers.CharField(source='course.cover', read_only=True)
+    teacher_name = serializers.CharField(source='course.teacher.display_name', read_only=True)
+
     class Meta:
         model = Order
-        fields = '__all__'
+        fields = [
+            'id',
+            'order_no',
+            'user',
+            'course',
+            'course_title',
+            'course_cover',
+            'teacher_name',
+            'amount',
+            'pay_status',
+            'payment_method',
+            'paid_at',
+            'created_at',
+            'updated_at',
+        ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 

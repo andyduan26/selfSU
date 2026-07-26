@@ -9,6 +9,7 @@ const { teacherStatus } = storeToRefs(authStore)
 const isTeacher = computed(() => teacherStatus.value?.is_teacher)
 const applicationStatus = computed(() => teacherStatus.value?.application_status)
 const courses = ref([])
+const teacherOrders = ref([])
 const editingId = ref(null)
 const courseForm = reactive(createEmptyCourse())
 const uploadMessage = ref('')
@@ -42,6 +43,7 @@ function resetForm() {
 async function loadCourses() {
   if (isTeacher.value) {
     courses.value = await authStore.fetchTeacherCourses()
+    teacherOrders.value = await authStore.fetchTeacherOrders()
   }
 }
 
@@ -228,6 +230,16 @@ async function deleteCourse(course) {
           <div class="course-actions">
             <button type="button" class="inline-button" @click="editCourse(course)">编辑</button>
             <button type="button" class="inline-button" @click="deleteCourse(course)">删除</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="course-list teacher-orders">
+        <h2>课程订单</h2>
+        <article v-for="order in teacherOrders" :key="order.id" class="course-item">
+          <div>
+            <strong>{{ order.course_title }}</strong>
+            <span>{{ order.order_no }} / {{ order.amount }} / {{ order.pay_status }} / {{ order.payment_method }}</span>
           </div>
         </article>
       </section>

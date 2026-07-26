@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import models
+from django.utils import timezone
 
 
 class TimeStampedModel(models.Model):
@@ -217,6 +218,11 @@ class Order(TimeStampedModel):
 
     def __str__(self):
         return self.order_no
+
+    def mark_paid(self):
+        self.pay_status = self.PAY_PAID
+        self.paid_at = timezone.now()
+        self.save(update_fields=['pay_status', 'paid_at', 'updated_at'])
 
 
 class Income(TimeStampedModel):

@@ -377,4 +377,128 @@ class TeacherCourseAPITests(TestCase):
         self.assertEqual(response.json()['data']['resolution'], '1080p')
         self.assertEqual(response.json()['data']['transcode_status'], CourseLesson.TRANSCODE_READY)
 
+
+class CourseOrderAPITests(TestCase):
+    def setUp(self):
+        self.teacher_user = User.objects.create_user(
+            username='order_teacher',
+            nickname='订单老师',
+            email='order_teacher@example.com',
+            phone='12600126000',
+            password='StrongPass123',
+        )
+        self.student = User.objects.create_user(
+            username='order_student',
+            nickname='订单学员',
+            email='order_student@example.com',
+            phone='12500125000',
+            password='StrongPass123',
+        )
+        self.teacher = TeacherProfile.objects.create(user=self.teacher_user, display_name='订单老师')
+
+    def authenticate(self, username):
+        response = self.client.post('/api/auth/login/', data={
+            'username': username,
+            'password': 'StrongPass123',
+        }, content_type='application/json')
+        self.client.defaults['HTTP_AUTHORIZATION'] = f"Bearer {response.json()['data']['access']}"
+
+    def create_course_with_lessons(self, price):
+        course = Course.objects.create(
+            teacher=self.teacher,
+            title=f'{price}课程',
+            category='订单',
+            price=price,
+            suitable_audience='学员',
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        )
+        chapter = CourseChapter.objects.create(course=course, title='第一章', sort_order=1)
+        trial = CourseLesson.objects.create(chapter=chapter, title='试看', is_trial=True, sort_order=1)
+        paid = CourseLesson.objects.create(chapter=chapter, title='正课', is_trial=False, sort_order=2)
+        return course, trial, paid
+
+    def test_buying_free_course_creates_paid_order_and_unlocks_full_lessons(self):
+        course, trial, paid = self.create_course_with_lessons('0.00')
+        self.authenticate('order_student')
+
+        response = self.client.post(f'/api/courses/{course.id}/orders/', data={
+            'payment_method': Order.METHOD_ALIPAY,
+        }, content_type='application/json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['data']['pay_status'], Order.PAY_PAID)
+        self.assertEqual(response.json()['data']['amount'], '0.00')
+        self.assertTrue(response.json()['data']['order_no'])
+
+        play_response = self.client.get(f'/api/lessons/{paid.id}/play/')
+        self.assertEqual(play_response.status_code, 200)
+        self.assertTrue(play_response.json()['data']['can_play'])
+
+    def test_buying_paid_course_creates_pending_order_until_payment_succeeds(self):
+        course, trial, paid = self.create_course_with_lessons('199.00')
+        self.authenticate('order_student')
+
+        response = self.client.post(f'/api/courses/{course.id}/orders/', data={
+            'payment_method': Order.METHOD_WECHAT,
+        }, content_type='application/json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['data']['pay_status'], Order.PAY_PENDING)
+        self.assertEqual(response.json()['data']['payment_method'], Order.METHOD_WECHAT)
+        denied_response = self.client.get(f'/api/lessons/{paid.id}/play/')
+        self.assertEqual(denied_response.status_code, 403)
+
+        order = Order.objects.get(order_no=response.json()['data']['order_no'])
+        order.mark_paid()
+        allowed_response = self.client.get(f'/api/lessons/{paid.id}/play/')
+        self.assertEqual(allowed_response.status_code, 200)
+
+    def test_user_and_teacher_can_read_their_order_lists(self):
+        course, trial, paid = self.create_course_with_lessons('99.00')
+        other_teacher_user = User.objects.create_user(
+            username='other_order_teacher',
+            nickname='其他订单老师',
+            email='other_order_teacher@example.com',
+            phone='12400124000',
+            password='StrongPass123',
+        )
+        other_teacher = TeacherProfile.objects.create(user=other_teacher_user, display_name='其他订单老师')
+        other_course = Course.objects.create(
+            teacher=other_teacher,
+            title='别人的订单课程',
+            category='订单',
+            price='99.00',
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        )
+        order = Order.objects.create(
+            order_no='MYORDER202607260001',
+            user=self.student,
+            course=course,
+            amount='99.00',
+            pay_status=Order.PAY_PAID,
+            payment_method=Order.METHOD_ALIPAY,
+            paid_at=timezone.now(),
+        )
+        Order.objects.create(
+            order_no='OTHERORDER202607260001',
+            user=self.student,
+            course=other_course,
+            amount='99.00',
+            pay_status=Order.PAY_PAID,
+            payment_method=Order.METHOD_ALIPAY,
+            paid_at=timezone.now(),
+        )
+
+        self.authenticate('order_student')
+        my_orders_response = self.client.get('/api/orders/')
+        self.assertEqual(my_orders_response.status_code, 200)
+        self.assertEqual(len(my_orders_response.json()['data']), 2)
+
+        self.authenticate('order_teacher')
+        teacher_orders_response = self.client.get('/api/teacher/orders/')
+        self.assertEqual(teacher_orders_response.status_code, 200)
+        self.assertEqual([item['order_no'] for item in teacher_orders_response.json()['data']], [order.order_no])
+
 # Create your tests here.

@@ -259,6 +259,43 @@ Authorization: Bearer access-token
 }
 ```
 
+## 创建课程订单
+
+`POST /api/courses/{id}/orders/`
+
+请求头：
+
+```http
+Authorization: Bearer access-token
+```
+
+请求：
+
+```json
+{
+  "payment_method": "alipay"
+}
+```
+
+规则：
+
+- 免费课程直接创建 `paid` 订单并开通完整学习权限
+- 付费课程创建 `pending` 订单
+- 已支付订单可播放完整课程
+- 未支付订单只能试看
+
+## 我的订单
+
+`GET /api/orders/`
+
+返回当前用户自己的订单列表。
+
+## 教师课程订单
+
+`GET /api/teacher/orders/`
+
+仅认证教师可访问，返回自己课程产生的订单数据。
+
 返回：
 
 ```json

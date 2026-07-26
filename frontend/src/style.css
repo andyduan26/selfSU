@@ -175,6 +175,11 @@ button:disabled {
   margin-top: 24px;
 }
 
+.buy-button {
+  width: auto;
+  margin-top: 28px;
+}
+
 .profile-header {
   display: flex;
   align-items: end;
@@ -288,6 +293,30 @@ button:disabled {
   display: block;
   margin-top: 8px;
   color: #666;
+}
+
+.orders-panel {
+  border-top: 1px solid #111;
+  margin-top: 56px;
+  padding-top: 32px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid #ddd;
+  padding: 18px 0;
+}
+
+.order-item span {
+  display: block;
+  margin-top: 8px;
+  color: #666;
+}
+
+.teacher-orders {
+  grid-column: 1 / -1;
 }
 
 .notice {

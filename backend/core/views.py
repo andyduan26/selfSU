@@ -1,10 +1,14 @@
+from decimal import Decimal
+from uuid import uuid4
+
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
 from .models import Course, CourseLesson, Order, TeacherApplication, TeacherProfile
-from .serializers import CourseLessonSerializer, CourseSerializer, PublicTeacherSerializer, TeacherApplicationSerializer, TeacherCourseSerializer, TeacherProfileSerializer
+from .serializers import CourseLessonSerializer, CourseSerializer, OrderSerializer, PublicTeacherSerializer, TeacherApplicationSerializer, TeacherCourseSerializer, TeacherProfileSerializer
 from .storage import R2ConfigurationError, create_r2_presigned_upload
 
 
@@ -202,5 +206,53 @@ class R2PresignedUploadAPIView(APIView):
         except R2ConfigurationError as error:
             return Response({'code': 500, 'message': str(error), 'data': None}, status=500)
         return Response({'code': 0, 'message': 'success', 'data': data})
+
+
+class CourseOrderCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        course = get_object_or_404(
+            Course,
+            pk=pk,
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        )
+        existing_order = Order.objects.filter(
+            user=request.user,
+            course=course,
+            pay_status__in=[Order.PAY_PENDING, Order.PAY_PAID],
+        ).order_by('-created_at').first()
+        if existing_order:
+            return Response({'code': 0, 'message': 'success', 'data': OrderSerializer(existing_order).data})
+        order = Order.objects.create(
+            order_no=f'DF{timezone.now().strftime("%Y%m%d%H%M%S")}{uuid4().hex[:8].upper()}',
+            user=request.user,
+            course=course,
+            amount=course.price,
+            pay_status=Order.PAY_PAID if course.price == Decimal('0.00') else Order.PAY_PENDING,
+            payment_method=request.data.get('payment_method', ''),
+            paid_at=timezone.now() if course.price == Decimal('0.00') else None,
+        )
+        return Response({'code': 0, 'message': 'success', 'data': OrderSerializer(order).data}, status=201)
+
+
+class MyOrderListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        orders = Order.objects.filter(user=request.user).select_related('course__teacher').order_by('-created_at')
+        return Response({'code': 0, 'message': 'success', 'data': OrderSerializer(orders, many=True).data})
+
+
+class TeacherOrderListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        teacher = getattr(request.user, 'teacher_profile', None)
+        if not teacher or not teacher.is_active:
+            return Response({'code': 403, 'message': '请先申请认证教师', 'data': None}, status=403)
+        orders = Order.objects.filter(course__teacher=teacher).select_related('course__teacher', 'user').order_by('-created_at')
+        return Response({'code': 0, 'message': 'success', 'data': OrderSerializer(orders, many=True).data})
 
 # Create your views here.

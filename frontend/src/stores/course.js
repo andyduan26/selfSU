@@ -43,5 +43,11 @@ export const useCourseStore = defineStore('course', {
       this.currentLesson = response.data.data
       return this.currentLesson
     },
+    async createCourseOrder(courseId, paymentMethod = 'alipay') {
+      const response = await http.post(`/courses/${courseId}/orders/`, {
+        payment_method: paymentMethod,
+      })
+      return response.data.data
+    },
   },
 })
