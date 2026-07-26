@@ -95,6 +95,21 @@ Authorization: Bearer access-token
 }
 ```
 
+## 核心模型 Serializer
+
+当前阶段已建立以下后端基础 Serializer，供后续 APIView 增量接入：
+
+- `TeacherApplicationSerializer`
+- `TeacherProfileSerializer`
+- `CourseSerializer`
+- `CourseChapterSerializer`
+- `CourseLessonSerializer`
+- `OrderSerializer`
+- `IncomeSerializer`
+- `WithdrawSerializer`
+- `CommentSerializer`
+- `FavoriteSerializer`
+
 `POST /api/auth/token/refresh/`
 
 请求：
