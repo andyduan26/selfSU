@@ -6,3 +6,5 @@
 - 初始化 Vue3 + Vite + Vue Router + Pinia + Axios 前端骨架。
 - 新增 `/api/health/` 健康检查接口，并在首页接入真实 API。
 - 新增 JWT 登录与刷新接口配置。
+- 新增真实用户注册、登录、当前用户和资料修改接口。
+- 新增前端注册、登录、个人中心页面和 Axios token 拦截。

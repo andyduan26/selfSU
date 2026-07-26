@@ -18,6 +18,11 @@ onMounted(() => {
       <p class="eyebrow">东方知识库</p>
       <h1>知识分享与视频课程平台</h1>
       <p class="summary">面向普通用户、认证教师和管理员，逐步建设课程内容、教师认证、支付和视频学习闭环。</p>
+      <nav class="actions" aria-label="账户入口">
+        <RouterLink to="/register">注册</RouterLink>
+        <RouterLink to="/login">登录</RouterLink>
+        <RouterLink to="/profile">个人中心</RouterLink>
+      </nav>
     </section>
 
     <section class="status-panel" aria-label="系统状态">
