@@ -2,7 +2,10 @@ from django.urls import path
 
 from .views import (
     HealthCheckAPIView,
+    LessonPlayAPIView,
+    PublicCourseDetailAPIView,
     PublicCourseListAPIView,
+    PublicTeacherDetailAPIView,
     TeacherApplicationAPIView,
     TeacherCourseDetailAPIView,
     TeacherCourseListCreateAPIView,
@@ -13,6 +16,9 @@ from .views import (
 urlpatterns = [
     path('health/', HealthCheckAPIView.as_view(), name='health-check'),
     path('courses/', PublicCourseListAPIView.as_view(), name='public-course-list'),
+    path('courses/<int:pk>/', PublicCourseDetailAPIView.as_view(), name='public-course-detail'),
+    path('teachers/<int:pk>/', PublicTeacherDetailAPIView.as_view(), name='public-teacher-detail'),
+    path('lessons/<int:pk>/play/', LessonPlayAPIView.as_view(), name='lesson-play'),
     path('teacher/applications/', TeacherApplicationAPIView.as_view(), name='teacher-application'),
     path('teacher/courses/', TeacherCourseListCreateAPIView.as_view(), name='teacher-course-list-create'),
     path('teacher/courses/<int:pk>/', TeacherCourseDetailAPIView.as_view(), name='teacher-course-detail'),

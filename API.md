@@ -218,6 +218,30 @@ Authorization: Bearer access-token
 
 只返回管理员审核通过且已发布的课程。
 
+支持按分类筛选：
+
+`GET /api/courses/?category=美学`
+
+## 前台课程详情
+
+`GET /api/courses/{id}/`
+
+只允许访问管理员审核通过且已发布的课程。返回课程封面、价格、讲师和章节目录；目录小节包含 `can_play`，用于判断当前用户是否可播放。
+
+## 教师主页
+
+`GET /api/teachers/{id}/`
+
+返回教师公开资料，以及该教师审核通过且已发布的课程。
+
+## 视频播放
+
+`GET /api/lessons/{id}/play/`
+
+- 试看小节：未登录也可播放
+- 非试看小节：必须登录且已购买课程
+- 未购买访问非试看小节返回 `403`
+
 `POST /api/auth/token/refresh/`
 
 请求：

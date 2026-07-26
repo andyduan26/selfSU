@@ -2,13 +2,17 @@
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 
+import { useCourseStore } from '../stores/course'
 import { useSystemStore } from '../stores/system'
 
 const systemStore = useSystemStore()
+const courseStore = useCourseStore()
 const { health, loading, error } = storeToRefs(systemStore)
+const { courses } = storeToRefs(courseStore)
 
 onMounted(() => {
   systemStore.fetchHealth()
+  courseStore.fetchCourses()
 })
 </script>
 
@@ -23,6 +27,7 @@ onMounted(() => {
         <RouterLink to="/login">登录</RouterLink>
         <RouterLink to="/profile">个人中心</RouterLink>
         <RouterLink to="/teacher">教师中心</RouterLink>
+        <RouterLink to="/courses">全部课程</RouterLink>
       </nav>
     </section>
 
@@ -32,6 +37,20 @@ onMounted(() => {
       <strong v-else-if="error" class="error">{{ error }}</strong>
       <strong v-else>{{ health?.status || '未连接' }}</strong>
       <small>{{ health?.service || '等待后端响应' }}</small>
+    </section>
+
+    <section class="course-band">
+      <div class="section-heading">
+        <p class="eyebrow">课程推荐</p>
+        <h2>审核通过的精选课程</h2>
+      </div>
+      <div class="course-grid">
+        <RouterLink v-for="course in courses.slice(0, 6)" :key="course.id" class="course-card" :to="`/courses/${course.id}`">
+          <img v-if="course.cover" :src="course.cover" :alt="course.title">
+          <div v-else class="cover-fallback">{{ course.category }}</div>
+          <span class="cover-title">{{ course.title }}</span>
+        </RouterLink>
+      </div>
     </section>
   </main>
 </template>

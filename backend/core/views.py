@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Course, TeacherApplication
-from .serializers import CourseSerializer, TeacherApplicationSerializer, TeacherCourseSerializer, TeacherProfileSerializer
+from .models import Course, CourseLesson, Order, TeacherApplication, TeacherProfile
+from .serializers import CourseLessonSerializer, CourseSerializer, PublicTeacherSerializer, TeacherApplicationSerializer, TeacherCourseSerializer, TeacherProfileSerializer
 
 
 class HealthCheckAPIView(APIView):
@@ -119,14 +119,68 @@ class TeacherCourseDetailAPIView(APIView):
 
 
 class PublicCourseListAPIView(APIView):
-    authentication_classes = []
     permission_classes = []
 
     def get(self, request):
+        category = request.query_params.get('category')
         courses = Course.objects.filter(
             audit_status=Course.AUDIT_APPROVED,
             publish_status=Course.PUBLISH_PUBLISHED,
         ).prefetch_related('chapters__lessons')
-        return Response({'code': 0, 'message': 'success', 'data': CourseSerializer(courses, many=True).data})
+        if category:
+            courses = courses.filter(category=category)
+        return Response({'code': 0, 'message': 'success', 'data': CourseSerializer(courses, many=True, context={'request': request}).data})
+
+
+class PublicCourseDetailAPIView(APIView):
+    permission_classes = []
+
+    def get(self, request, pk):
+        course = get_object_or_404(
+            Course.objects.prefetch_related('chapters__lessons').select_related('teacher'),
+            pk=pk,
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        )
+        Course.objects.filter(pk=course.pk).update(view_count=course.view_count + 1)
+        course.view_count += 1
+        return Response({'code': 0, 'message': 'success', 'data': CourseSerializer(course, context={'request': request}).data})
+
+
+class PublicTeacherDetailAPIView(APIView):
+    permission_classes = []
+
+    def get(self, request, pk):
+        teacher = get_object_or_404(TeacherProfile, pk=pk, is_active=True)
+        courses = teacher.courses.filter(
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        ).prefetch_related('chapters__lessons')
+        data = PublicTeacherSerializer(teacher).data
+        data['courses'] = CourseSerializer(courses, many=True, context={'request': request}).data
+        return Response({'code': 0, 'message': 'success', 'data': data})
+
+
+class LessonPlayAPIView(APIView):
+    permission_classes = []
+
+    def get(self, request, pk):
+        lesson = get_object_or_404(
+            CourseLesson.objects.select_related('chapter__course').filter(
+                chapter__course__audit_status=Course.AUDIT_APPROVED,
+                chapter__course__publish_status=Course.PUBLISH_PUBLISHED,
+            ),
+            pk=pk,
+        )
+        can_play = lesson.is_trial
+        if request.user.is_authenticated:
+            can_play = can_play or Order.objects.filter(
+                user=request.user,
+                course=lesson.chapter.course,
+                pay_status=Order.PAY_PAID,
+            ).exists()
+        if not can_play:
+            return Response({'code': 403, 'message': '未购买课程只能试看', 'data': {'can_play': False}}, status=403)
+        return Response({'code': 0, 'message': 'success', 'data': CourseLessonSerializer(lesson, context={'request': request}).data})
 
 # Create your views here.

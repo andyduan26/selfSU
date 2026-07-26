@@ -38,29 +38,56 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class PublicTeacherSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeacherProfile
+        fields = ['id', 'display_name', 'title', 'bio', 'avatar', 'created_at']
+
+
 class CourseLessonSerializer(serializers.ModelSerializer):
+    can_play = serializers.SerializerMethodField()
+
     class Meta:
         model = CourseLesson
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at']
 
+    def get_can_play(self, obj):
+        request = self.context.get('request')
+        if obj.is_trial:
+            return True
+        if not request or not request.user.is_authenticated:
+            return False
+        return Order.objects.filter(
+            user=request.user,
+            course=obj.chapter.course,
+            pay_status=Order.PAY_PAID,
+        ).exists()
+
 
 class CourseChapterSerializer(serializers.ModelSerializer):
-    lessons = CourseLessonSerializer(many=True, read_only=True)
+    lessons = serializers.SerializerMethodField()
 
     class Meta:
         model = CourseChapter
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at']
 
+    def get_lessons(self, obj):
+        return CourseLessonSerializer(obj.lessons.all(), many=True, context=self.context).data
+
 
 class CourseSerializer(serializers.ModelSerializer):
-    chapters = CourseChapterSerializer(many=True, read_only=True)
+    chapters = serializers.SerializerMethodField()
+    teacher = PublicTeacherSerializer(read_only=True)
 
     class Meta:
         model = Course
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at', 'view_count']
+
+    def get_chapters(self, obj):
+        return CourseChapterSerializer(obj.chapters.all(), many=True, context=self.context).data
 
 
 class TeacherCourseLessonInputSerializer(serializers.ModelSerializer):

@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.core import mail
+from django.utils import timezone
 
 from accounts.models import User
 from .models import Course, CourseChapter, CourseLesson, Favorite, Income, Order, TeacherApplication, TeacherProfile
@@ -278,5 +279,50 @@ class TeacherCourseAPITests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual([item['id'] for item in response.json()['data']], [approved.id])
+
+    def test_public_course_detail_teacher_page_and_play_permission(self):
+        course = Course.objects.create(
+            teacher=self.teacher,
+            title='公开视频课',
+            cover='r2://covers/public.jpg',
+            category='美学',
+            price='99.00',
+            suitable_audience='普通用户',
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        )
+        chapter = CourseChapter.objects.create(course=course, title='第一章', sort_order=1)
+        trial = CourseLesson.objects.create(chapter=chapter, title='试看', video_file='r2://trial.mp4', is_trial=True, sort_order=1)
+        paid = CourseLesson.objects.create(chapter=chapter, title='正课', video_file='r2://paid.mp4', is_trial=False, sort_order=2)
+
+        detail_response = self.client.get(f'/api/courses/{course.id}/')
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertEqual(detail_response.json()['data']['teacher']['display_name'], '课程老师')
+        self.assertEqual(detail_response.json()['data']['chapters'][0]['lessons'][1]['can_play'], False)
+
+        teacher_response = self.client.get(f'/api/teachers/{self.teacher.id}/')
+        self.assertEqual(teacher_response.status_code, 200)
+        self.assertEqual(teacher_response.json()['data']['courses'][0]['id'], course.id)
+
+        trial_response = self.client.get(f'/api/lessons/{trial.id}/play/')
+        self.assertEqual(trial_response.status_code, 200)
+        self.assertTrue(trial_response.json()['data']['can_play'])
+
+        paid_denied_response = self.client.get(f'/api/lessons/{paid.id}/play/')
+        self.assertEqual(paid_denied_response.status_code, 403)
+
+        Order.objects.create(
+            order_no='PLAY202607260001',
+            user=self.student,
+            course=course,
+            amount='99.00',
+            pay_status=Order.PAY_PAID,
+            payment_method=Order.METHOD_ALIPAY,
+            paid_at=timezone.now(),
+        )
+        self.authenticate('course_student')
+        paid_allowed_response = self.client.get(f'/api/lessons/{paid.id}/play/')
+        self.assertEqual(paid_allowed_response.status_code, 200)
+        self.assertEqual(paid_allowed_response.json()['data']['video_file'], 'r2://paid.mp4')
 
 # Create your tests here.
