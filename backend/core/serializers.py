@@ -63,6 +63,97 @@ class CourseSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'view_count']
 
 
+class TeacherCourseLessonInputSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+
+    class Meta:
+        model = CourseLesson
+        fields = ['id', 'title', 'video_file', 'is_trial', 'sort_order']
+
+
+class TeacherCourseChapterInputSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+    lessons = TeacherCourseLessonInputSerializer(many=True, required=False)
+
+    class Meta:
+        model = CourseChapter
+        fields = ['id', 'title', 'summary', 'sort_order', 'lessons']
+
+
+class TeacherCourseSerializer(serializers.ModelSerializer):
+    chapters = TeacherCourseChapterInputSerializer(many=True, required=False)
+
+    class Meta:
+        model = Course
+        fields = [
+            'id',
+            'cover',
+            'title',
+            'category',
+            'price',
+            'summary',
+            'suitable_audience',
+            'audit_status',
+            'audit_reject_reason',
+            'publish_status',
+            'has_trial',
+            'sort_weight',
+            'view_count',
+            'chapters',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = [
+            'id',
+            'audit_status',
+            'audit_reject_reason',
+            'publish_status',
+            'has_trial',
+            'sort_weight',
+            'view_count',
+            'created_at',
+            'updated_at',
+        ]
+
+    def create(self, validated_data):
+        chapters_data = validated_data.pop('chapters', [])
+        course = Course.objects.create(
+            teacher=self.context['teacher'],
+            audit_status=Course.AUDIT_PENDING,
+            publish_status=Course.PUBLISH_DRAFT,
+            **validated_data,
+        )
+        self.sync_chapters(course, chapters_data)
+        return course
+
+    def update(self, instance, validated_data):
+        chapters_data = validated_data.pop('chapters', None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.audit_status = Course.AUDIT_PENDING
+        instance.publish_status = Course.PUBLISH_DRAFT
+        instance.audit_reject_reason = ''
+        instance.save()
+        if chapters_data is not None:
+            instance.chapters.all().delete()
+            self.sync_chapters(instance, chapters_data)
+        return instance
+
+    def sync_chapters(self, course, chapters_data):
+        has_trial = False
+        for chapter_data in chapters_data:
+            lessons_data = chapter_data.pop('lessons', [])
+            chapter_data.pop('id', None)
+            chapter = CourseChapter.objects.create(course=course, **chapter_data)
+            for lesson_data in lessons_data:
+                lesson_data.pop('id', None)
+                lesson = CourseLesson.objects.create(chapter=chapter, **lesson_data)
+                has_trial = has_trial or lesson.is_trial
+        if has_trial != course.has_trial:
+            course.has_trial = has_trial
+            course.save(update_fields=['has_trial', 'updated_at'])
+
+
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order

@@ -151,4 +151,132 @@ class TeacherApplicationAPITests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('审核未通过', mail.outbox[0].subject)
 
+
+class TeacherCourseAPITests(TestCase):
+    def setUp(self):
+        self.teacher_user = User.objects.create_user(
+            username='course_teacher',
+            nickname='课程老师',
+            email='course_teacher@example.com',
+            phone='13200132000',
+            password='StrongPass123',
+        )
+        self.other_user = User.objects.create_user(
+            username='other_teacher',
+            nickname='其他老师',
+            email='other_teacher@example.com',
+            phone='13100131000',
+            password='StrongPass123',
+        )
+        self.student = User.objects.create_user(
+            username='course_student',
+            nickname='课程学员',
+            email='course_student@example.com',
+            phone='13000130000',
+            password='StrongPass123',
+        )
+        self.teacher = TeacherProfile.objects.create(user=self.teacher_user, display_name='课程老师')
+        self.other_teacher = TeacherProfile.objects.create(user=self.other_user, display_name='其他老师')
+
+    def authenticate(self, username):
+        response = self.client.post('/api/auth/login/', data={
+            'username': username,
+            'password': 'StrongPass123',
+        }, content_type='application/json')
+        self.client.defaults['HTTP_AUTHORIZATION'] = f"Bearer {response.json()['data']['access']}"
+
+    def test_only_certified_teacher_can_create_nested_course_pending_review(self):
+        self.authenticate('course_student')
+        denied_response = self.client.post('/api/teacher/courses/', data={}, content_type='application/json')
+        self.assertEqual(denied_response.status_code, 403)
+
+        self.authenticate('course_teacher')
+        response = self.client.post('/api/teacher/courses/', data={
+            'title': '东方器物课',
+            'category': '美学',
+            'price': '299.00',
+            'summary': '从器物理解东方审美',
+            'suitable_audience': '设计师、品牌主理人',
+            'chapters': [
+                {
+                    'title': '第一章',
+                    'sort_order': 1,
+                    'lessons': [
+                        {'title': '试看导论', 'is_trial': True, 'sort_order': 1},
+                        {'title': '正式课程', 'is_trial': False, 'sort_order': 2},
+                    ],
+                },
+            ],
+        }, content_type='application/json')
+
+        self.assertEqual(response.status_code, 201)
+        data = response.json()['data']
+        self.assertEqual(data['audit_status'], Course.AUDIT_PENDING)
+        self.assertEqual(data['publish_status'], Course.PUBLISH_DRAFT)
+        self.assertEqual(data['chapters'][0]['lessons'][0]['title'], '试看导论')
+        self.assertEqual(Course.objects.get(id=data['id']).teacher, self.teacher)
+
+    def test_teacher_can_list_update_and_delete_only_own_courses(self):
+        own_course = Course.objects.create(
+            teacher=self.teacher,
+            title='自己的课',
+            category='美学',
+            price='99.00',
+            suitable_audience='普通用户',
+        )
+        other_course = Course.objects.create(
+            teacher=self.other_teacher,
+            title='别人的课',
+            category='美学',
+            price='99.00',
+            suitable_audience='普通用户',
+        )
+
+        self.authenticate('course_teacher')
+        list_response = self.client.get('/api/teacher/courses/')
+        self.assertEqual([item['title'] for item in list_response.json()['data']], ['自己的课'])
+
+        update_response = self.client.put(f'/api/teacher/courses/{own_course.id}/', data={
+            'title': '更新后的课',
+            'category': '文化',
+            'price': '129.00',
+            'summary': '更新简介',
+            'suitable_audience': '进阶用户',
+            'chapters': [
+                {'title': '更新章节', 'sort_order': 1, 'lessons': [{'title': '更新小节', 'sort_order': 1, 'is_trial': True}]},
+            ],
+        }, content_type='application/json')
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(Course.objects.get(id=own_course.id).chapters.count(), 1)
+
+        forbidden_response = self.client.delete(f'/api/teacher/courses/{other_course.id}/')
+        self.assertEqual(forbidden_response.status_code, 404)
+
+        delete_response = self.client.delete(f'/api/teacher/courses/{own_course.id}/')
+        self.assertEqual(delete_response.status_code, 204)
+        self.assertFalse(Course.objects.filter(id=own_course.id).exists())
+
+    def test_public_courses_only_returns_admin_approved_published_courses(self):
+        approved = Course.objects.create(
+            teacher=self.teacher,
+            title='已通过课程',
+            category='美学',
+            price='99.00',
+            suitable_audience='普通用户',
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        )
+        Course.objects.create(
+            teacher=self.teacher,
+            title='待审核课程',
+            category='美学',
+            price='99.00',
+            suitable_audience='普通用户',
+        )
+
+        response = self.client.get('/api/courses/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item['id'] for item in response.json()['data']], [approved.id])
+
 # Create your tests here.

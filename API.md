@@ -163,6 +163,61 @@ Authorization: Bearer access-token
 }
 ```
 
+## 教师课程作品
+
+`GET /api/teacher/courses/`
+
+查询当前认证教师自己的课程作品。
+
+`POST /api/teacher/courses/`
+
+创建课程作品，创建后默认：
+
+- `audit_status`: `pending`
+- `publish_status`: `draft`
+
+请求：
+
+```json
+{
+  "title": "东方器物课",
+  "cover": "r2://covers/course.jpg",
+  "category": "美学",
+  "price": "299.00",
+  "summary": "课程简介",
+  "suitable_audience": "设计师、品牌主理人",
+  "chapters": [
+    {
+      "title": "第一章",
+      "summary": "章节简介",
+      "sort_order": 1,
+      "lessons": [
+        {
+          "title": "试看导论",
+          "video_file": "r2://videos/lesson.mp4",
+          "is_trial": true,
+          "sort_order": 1
+        }
+      ]
+    }
+  ]
+}
+```
+
+`PUT /api/teacher/courses/{id}/`
+
+编辑自己的课程作品，保存后重新进入待审核。
+
+`DELETE /api/teacher/courses/{id}/`
+
+删除自己的课程作品。
+
+## 前台课程列表
+
+`GET /api/courses/`
+
+只返回管理员审核通过且已发布的课程。
+
 `POST /api/auth/token/refresh/`
 
 请求：

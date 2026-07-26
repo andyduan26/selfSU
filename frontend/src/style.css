@@ -216,6 +216,80 @@ button:disabled {
   line-height: 1.8;
 }
 
+.teacher-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 56px;
+  padding-top: 48px;
+}
+
+.course-editor,
+.course-list,
+.chapter-editor,
+.lesson-editor {
+  display: grid;
+  gap: 18px;
+}
+
+.course-editor label {
+  display: grid;
+  gap: 8px;
+  color: #555;
+  font-size: 14px;
+}
+
+.course-editor input,
+.course-editor textarea {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #111;
+  border-radius: 0;
+  padding: 12px 0;
+  background: #fff;
+  color: #111;
+  font: inherit;
+}
+
+.chapter-editor,
+.lesson-editor,
+.course-item {
+  border-top: 1px solid #111;
+  padding-top: 18px;
+}
+
+.editor-row,
+.course-item,
+.course-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.inline-button {
+  width: auto;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.check-field {
+  display: flex !important;
+  grid-template-columns: none;
+  align-items: center;
+}
+
+.check-field input {
+  width: auto;
+}
+
+.course-item span,
+.course-item small {
+  display: block;
+  margin-top: 8px;
+  color: #666;
+}
+
 .notice {
   margin-top: 24px;
   color: #333;
@@ -265,5 +339,11 @@ button:disabled {
 
   .profile-grid {
     gap: 40px;
+  }
+
+  .teacher-workspace,
+  .course-item {
+    grid-template-columns: 1fr;
+    display: grid;
   }
 }

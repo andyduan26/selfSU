@@ -101,12 +101,14 @@ class Course(TimeStampedModel):
     ]
 
     teacher = models.ForeignKey(TeacherProfile, verbose_name='教师', on_delete=models.PROTECT, related_name='courses')
-    cover = models.FileField('课程封面', upload_to='course/covers/', blank=True)
+    cover = models.CharField('课程封面', max_length=500, blank=True)
     title = models.CharField('课程标题', max_length=120)
     summary = models.TextField('课程简介', blank=True)
+    suitable_audience = models.TextField('适合人群', blank=True)
     price = models.DecimalField('课程价格', max_digits=10, decimal_places=2, default=0)
     category = models.CharField('课程分类', max_length=60)
     audit_status = models.CharField('审核状态', max_length=20, choices=AUDIT_STATUS_CHOICES, default=AUDIT_PENDING)
+    audit_reject_reason = models.TextField('审核拒绝原因', blank=True)
     publish_status = models.CharField('发布状态', max_length=20, choices=PUBLISH_STATUS_CHOICES, default=PUBLISH_DRAFT)
     has_trial = models.BooleanField('支持试看', default=False)
     sort_weight = models.IntegerField('排序权重', default=0)
@@ -119,6 +121,19 @@ class Course(TimeStampedModel):
 
     def __str__(self):
         return self.title
+
+    def approve(self):
+        self.audit_status = self.AUDIT_APPROVED
+        self.publish_status = self.PUBLISH_PUBLISHED
+        self.audit_reject_reason = ''
+        self.save(update_fields=['audit_status', 'publish_status', 'audit_reject_reason', 'updated_at'])
+
+    def reject(self):
+        if not self.audit_reject_reason:
+            raise ValueError('审核拒绝需要填写原因')
+        self.audit_status = self.AUDIT_REJECTED
+        self.publish_status = self.PUBLISH_DRAFT
+        self.save(update_fields=['audit_status', 'publish_status', 'updated_at'])
 
 
 class CourseChapter(TimeStampedModel):
@@ -139,7 +154,7 @@ class CourseChapter(TimeStampedModel):
 class CourseLesson(TimeStampedModel):
     chapter = models.ForeignKey(CourseChapter, verbose_name='章节', on_delete=models.CASCADE, related_name='lessons')
     title = models.CharField('小节标题', max_length=120)
-    video_file = models.FileField('视频文件', upload_to='course/videos/', blank=True)
+    video_file = models.CharField('视频文件', max_length=500, blank=True)
     duration_seconds = models.PositiveIntegerField('视频时长秒数', default=0)
     is_trial = models.BooleanField('是否试看', default=False)
     sort_order = models.PositiveIntegerField('排序', default=0)

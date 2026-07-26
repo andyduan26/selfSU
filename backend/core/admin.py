@@ -58,6 +58,25 @@ class CourseAdmin(BaseAdmin):
     list_filter = ['audit_status', 'publish_status', 'has_trial', 'category', 'created_at']
     search_fields = ['title', 'summary', 'category', 'teacher__display_name', 'teacher__user__username']
     ordering = ['-sort_weight', '-created_at']
+    actions = ['approve_courses', 'reject_courses']
+
+    @admin.action(description='审核通过所选课程')
+    def approve_courses(self, request, queryset):
+        for course in queryset:
+            course.approve()
+        self.message_user(request, f'已通过 {queryset.count()} 门课程')
+
+    @admin.action(description='拒绝所选课程')
+    def reject_courses(self, request, queryset):
+        rejected_count = 0
+        skipped_count = 0
+        for course in queryset:
+            try:
+                course.reject()
+                rejected_count += 1
+            except ValueError:
+                skipped_count += 1
+        self.message_user(request, f'已拒绝 {rejected_count} 门课程，{skipped_count} 门缺少拒绝原因未处理')
 
 
 @admin.register(CourseChapter)

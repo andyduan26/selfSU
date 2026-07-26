@@ -85,6 +85,21 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
+    async fetchTeacherCourses() {
+      const response = await http.get('/teacher/courses/')
+      return response.data.data
+    },
+    async createTeacherCourse(payload) {
+      const response = await http.post('/teacher/courses/', payload)
+      return response.data.data
+    },
+    async updateTeacherCourse(id, payload) {
+      const response = await http.put(`/teacher/courses/${id}/`, payload)
+      return response.data.data
+    },
+    async deleteTeacherCourse(id) {
+      await http.delete(`/teacher/courses/${id}/`)
+    },
     async updateProfile(form) {
       this.loading = true
       this.error = ''
