@@ -1,6 +1,8 @@
 from decimal import Decimal
 from uuid import uuid4
 
+import requests
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.response import Response
@@ -9,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from .models import Course, CourseLesson, Order, TeacherApplication, TeacherProfile
 from .serializers import CourseLessonSerializer, CourseSerializer, OrderSerializer, PublicTeacherSerializer, TeacherApplicationSerializer, TeacherCourseSerializer, TeacherProfileSerializer
+from .alipay import AlipayAPIError, AlipayConfigurationError, create_alipay_precreate, verify_alipay_notify
 from .storage import R2ConfigurationError, create_r2_presigned_upload
 
 
@@ -254,5 +257,53 @@ class TeacherOrderListAPIView(APIView):
             return Response({'code': 403, 'message': '请先申请认证教师', 'data': None}, status=403)
         orders = Order.objects.filter(course__teacher=teacher).select_related('course__teacher', 'user').order_by('-created_at')
         return Response({'code': 0, 'message': 'success', 'data': OrderSerializer(orders, many=True).data})
+
+
+class AlipayPrecreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, order_no):
+        order = get_object_or_404(Order, order_no=order_no, user=request.user)
+        if order.pay_status == Order.PAY_PAID:
+            return Response({'code': 0, 'message': 'success', 'data': {'qr_code': '', 'order': OrderSerializer(order).data}})
+        try:
+            payload = create_alipay_precreate(order)
+        except AlipayConfigurationError as error:
+            return Response({'code': 500, 'message': str(error), 'data': None}, status=500)
+        except (AlipayAPIError, requests.RequestException) as error:
+            return Response({'code': 502, 'message': f'支付宝下单失败：{error}', 'data': None}, status=502)
+        return Response({'code': 0, 'message': 'success', 'data': {'qr_code': payload['qr_code'], 'order': OrderSerializer(order).data}})
+
+
+class OrderStatusAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, order_no):
+        order = get_object_or_404(Order, order_no=order_no, user=request.user)
+        return Response({'code': 0, 'message': 'success', 'data': OrderSerializer(order).data})
+
+
+class AlipayNotifyAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        payload = request.POST.dict() or request.data.copy()
+        try:
+            is_valid = verify_alipay_notify(payload)
+        except AlipayConfigurationError:
+            return HttpResponse('failure')
+        if not is_valid:
+            return HttpResponse('failure')
+        order_no = payload.get('out_trade_no')
+        trade_status = payload.get('trade_status')
+        if trade_status in ['TRADE_SUCCESS', 'TRADE_FINISHED']:
+            try:
+                order = Order.objects.get(order_no=order_no)
+            except Order.DoesNotExist:
+                return HttpResponse('failure')
+            if order.pay_status != Order.PAY_PAID:
+                order.mark_paid()
+        return HttpResponse('success')
 
 # Create your views here.

@@ -474,6 +474,41 @@ button:disabled {
   background: #111;
 }
 
+.pay-modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  z-index: 20;
+}
+
+.pay-dialog {
+  position: relative;
+  width: min(100%, 420px);
+  border: 1px solid #111;
+  background: #fff;
+  padding: 40px;
+  text-align: center;
+}
+
+.pay-dialog h2 {
+  margin: 0 0 24px;
+  font-weight: 400;
+}
+
+.pay-dialog img {
+  width: 240px;
+  height: 240px;
+}
+
+.close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
 .profile-details {
   display: grid;
   gap: 28px;

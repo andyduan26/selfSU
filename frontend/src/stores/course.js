@@ -49,5 +49,13 @@ export const useCourseStore = defineStore('course', {
       })
       return response.data.data
     },
+    async createAlipayQrCode(orderNo) {
+      const response = await http.post(`/orders/${orderNo}/alipay/precreate/`)
+      return response.data.data
+    },
+    async fetchOrderStatus(orderNo) {
+      const response = await http.get(`/orders/${orderNo}/status/`)
+      return response.data.data
+    },
   },
 })

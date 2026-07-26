@@ -259,6 +259,20 @@ Authorization: Bearer access-token
 }
 ```
 
+返回：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "upload_url": "https://...",
+    "public_url": "https://cdn.example.com/course-videos/xxx.mp4",
+    "object_key": "course-videos/xxx.mp4"
+  }
+}
+```
+
 ## 创建课程订单
 
 `POST /api/courses/{id}/orders/`
@@ -296,19 +310,37 @@ Authorization: Bearer access-token
 
 仅认证教师可访问，返回自己课程产生的订单数据。
 
-返回：
+## 支付宝扫码预下单
 
-```json
-{
-  "code": 0,
-  "message": "success",
-  "data": {
-    "upload_url": "https://...",
-    "public_url": "https://cdn.example.com/course-videos/xxx.mp4",
-    "object_key": "course-videos/xxx.mp4"
-  }
-}
+`POST /api/orders/{order_no}/alipay/precreate/`
+
+请求头：
+
+```http
+Authorization: Bearer access-token
 ```
+
+返回 `qr_code`，前端用 `qrcode` 生成二维码图片。支付宝密钥只从后端环境变量读取。
+
+## 订单状态轮询
+
+`GET /api/orders/{order_no}/status/`
+
+请求头：
+
+```http
+Authorization: Bearer access-token
+```
+
+前端每 3 秒轮询一次；订单变为 `paid` 后跳转学习页，`closed` 或 `refunded` 时显示支付失败提示。
+
+## 支付宝异步通知
+
+`POST /api/alipay/notify/`
+
+支付宝服务器回调地址。后端验签通过且 `trade_status` 为 `TRADE_SUCCESS` 或 `TRADE_FINISHED` 时，将订单标记为已支付。
+
+返回支付宝要求的纯文本：`success` 或 `failure`。
 
 `POST /api/auth/token/refresh/`
 

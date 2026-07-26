@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.core import mail
 from django.utils import timezone
 from unittest.mock import patch
+from django.test import override_settings
 
 from accounts.models import User
 from .models import Course, CourseChapter, CourseLesson, Favorite, Income, Order, TeacherApplication, TeacherProfile
@@ -500,5 +501,71 @@ class CourseOrderAPITests(TestCase):
         teacher_orders_response = self.client.get('/api/teacher/orders/')
         self.assertEqual(teacher_orders_response.status_code, 200)
         self.assertEqual([item['order_no'] for item in teacher_orders_response.json()['data']], [order.order_no])
+
+    @patch('core.views.create_alipay_precreate')
+    def test_alipay_precreate_returns_qr_code_for_pending_order(self, mock_precreate):
+        course, trial, paid = self.create_course_with_lessons('199.00')
+        self.authenticate('order_student')
+        order_response = self.client.post(f'/api/courses/{course.id}/orders/', data={
+            'payment_method': Order.METHOD_ALIPAY,
+        }, content_type='application/json')
+        order_no = order_response.json()['data']['order_no']
+        mock_precreate.return_value = {'qr_code': 'https://qr.alipay.com/test', 'out_trade_no': order_no}
+
+        response = self.client.post(f'/api/orders/{order_no}/alipay/precreate/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['data']['qr_code'], 'https://qr.alipay.com/test')
+        mock_precreate.assert_called_once()
+
+    @override_settings(ALIPAY_APP_ID='')
+    def test_alipay_precreate_returns_clear_error_when_env_missing(self):
+        course, trial, paid = self.create_course_with_lessons('199.00')
+        self.authenticate('order_student')
+        order_response = self.client.post(f'/api/courses/{course.id}/orders/', data={
+            'payment_method': Order.METHOD_ALIPAY,
+        }, content_type='application/json')
+        order_no = order_response.json()['data']['order_no']
+
+        response = self.client.post(f'/api/orders/{order_no}/alipay/precreate/')
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn('支付宝环境变量未配置完整', response.json()['message'])
+
+    def test_order_status_polling_returns_latest_payment_status(self):
+        course, trial, paid = self.create_course_with_lessons('199.00')
+        self.authenticate('order_student')
+        order_response = self.client.post(f'/api/courses/{course.id}/orders/', data={
+            'payment_method': Order.METHOD_ALIPAY,
+        }, content_type='application/json')
+        order = Order.objects.get(order_no=order_response.json()['data']['order_no'])
+
+        pending_response = self.client.get(f'/api/orders/{order.order_no}/status/')
+        self.assertEqual(pending_response.json()['data']['pay_status'], Order.PAY_PENDING)
+
+        order.mark_paid()
+        paid_response = self.client.get(f'/api/orders/{order.order_no}/status/')
+        self.assertEqual(paid_response.json()['data']['pay_status'], Order.PAY_PAID)
+
+    @patch('core.views.verify_alipay_notify')
+    def test_alipay_notify_marks_order_paid_after_signature_verified(self, mock_verify):
+        mock_verify.return_value = True
+        course, trial, paid = self.create_course_with_lessons('199.00')
+        self.authenticate('order_student')
+        order_response = self.client.post(f'/api/courses/{course.id}/orders/', data={
+            'payment_method': Order.METHOD_ALIPAY,
+        }, content_type='application/json')
+        order_no = order_response.json()['data']['order_no']
+
+        notify_response = self.client.post('/api/alipay/notify/', data={
+            'out_trade_no': order_no,
+            'trade_status': 'TRADE_SUCCESS',
+            'sign': 'mock-signature',
+            'sign_type': 'RSA2',
+        })
+
+        self.assertEqual(notify_response.status_code, 200)
+        self.assertEqual(notify_response.content.decode(), 'success')
+        self.assertEqual(Order.objects.get(order_no=order_no).pay_status, Order.PAY_PAID)
 
 # Create your tests here.
