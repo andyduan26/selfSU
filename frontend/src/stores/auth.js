@@ -10,6 +10,7 @@ export const useAuthStore = defineStore('auth', {
     accessToken: savedAccessToken,
     refreshToken: savedRefreshToken,
     user: savedUser ? JSON.parse(savedUser) : null,
+    teacherStatus: null,
     loading: false,
     error: '',
   }),
@@ -29,6 +30,7 @@ export const useAuthStore = defineStore('auth', {
       this.accessToken = ''
       this.refreshToken = ''
       this.user = null
+      this.teacherStatus = null
       sessionStorage.removeItem('accessToken')
       sessionStorage.removeItem('refreshToken')
       sessionStorage.removeItem('currentUser')
@@ -63,6 +65,25 @@ export const useAuthStore = defineStore('auth', {
       const response = await http.get('/auth/me/')
       this.user = response.data.data
       sessionStorage.setItem('currentUser', JSON.stringify(this.user))
+    },
+    async fetchTeacherStatus() {
+      const response = await http.get('/teacher/status/')
+      this.teacherStatus = response.data.data
+      return this.teacherStatus
+    },
+    async submitTeacherApplication(form) {
+      this.loading = true
+      this.error = ''
+      try {
+        const response = await http.post('/teacher/applications/', form)
+        await this.fetchTeacherStatus()
+        return response.data.data
+      } catch (error) {
+        this.error = '教师认证申请提交失败'
+        throw error
+      } finally {
+        this.loading = false
+      }
     },
     async updateProfile(form) {
       this.loading = true

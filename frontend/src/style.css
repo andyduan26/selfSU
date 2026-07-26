@@ -155,6 +155,17 @@ button:disabled {
   outline: none;
 }
 
+.form textarea {
+  width: 100%;
+  border: 1px solid #111;
+  border-radius: 0;
+  padding: 12px;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  resize: vertical;
+}
+
 .form-error {
   color: #8a1f11;
 }
@@ -182,6 +193,33 @@ button:disabled {
   grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
   gap: 72px;
   padding-top: 48px;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 16px;
+  padding-top: 28px;
+}
+
+.profile-actions a {
+  border: 1px solid #111;
+  color: #111;
+  padding: 14px 22px;
+  text-decoration: none;
+}
+
+.teacher-panel {
+  max-width: 720px;
+  padding-top: 48px;
+  color: #111;
+  font-size: 18px;
+  line-height: 1.8;
+}
+
+.notice {
+  margin-top: 24px;
+  color: #333;
+  line-height: 1.8;
 }
 
 .profile-details {

@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.mail import send_mail
 from django.db import models
 
 
@@ -37,6 +38,29 @@ class TeacherApplication(TimeStampedModel):
 
     def __str__(self):
         return f'{self.real_name} - {self.get_status_display()}'
+
+    def approve(self, review_note=''):
+        self.status = self.STATUS_APPROVED
+        self.review_note = review_note
+        self.save(update_fields=['status', 'review_note', 'updated_at'])
+        TeacherProfile.objects.get_or_create(
+            user=self.user,
+            defaults={
+                'application': self,
+                'display_name': self.user.nickname or self.real_name,
+                'bio': self.bio,
+            },
+        )
+        self.send_review_email('东方知识库教师认证审核通过', '您的教师认证申请已审核通过。')
+
+    def reject(self, review_note=''):
+        self.status = self.STATUS_REJECTED
+        self.review_note = review_note
+        self.save(update_fields=['status', 'review_note', 'updated_at'])
+        self.send_review_email('东方知识库教师认证审核未通过', f'您的教师认证申请未通过。原因：{review_note or "请补充完整资料后再次提交。"}')
+
+    def send_review_email(self, subject, message):
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [self.email], fail_silently=True)
 
 
 class TeacherProfile(TimeStampedModel):

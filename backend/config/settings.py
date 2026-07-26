@@ -160,3 +160,6 @@ SIMPLE_JWT = {
 SIMPLEUI_HOME_INFO = False
 SIMPLEUI_HOME_QUICK = True
 SIMPLEUI_ANALYSIS = False
+
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@dongfangzhishiku.local')

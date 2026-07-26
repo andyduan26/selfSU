@@ -110,6 +110,59 @@ Authorization: Bearer access-token
 - `CommentSerializer`
 - `FavoriteSerializer`
 
+## 教师认证申请
+
+`POST /api/teacher/applications/`
+
+请求头：
+
+```http
+Authorization: Bearer access-token
+```
+
+请求：
+
+```json
+{
+  "real_name": "张老师",
+  "phone": "13800138000",
+  "email": "teacher@example.com",
+  "bio": "教学经验说明"
+}
+```
+
+返回待审核状态和提示文案：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "status": "pending",
+    "notice": "耐心等待2-3个工作日，结果会邮箱通知。"
+  }
+}
+```
+
+## 教师认证状态
+
+`GET /api/teacher/status/`
+
+返回：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "is_teacher": false,
+    "application_status": "pending",
+    "application": {},
+    "teacher_profile": null
+  }
+}
+```
+
 `POST /api/auth/token/refresh/`
 
 请求：

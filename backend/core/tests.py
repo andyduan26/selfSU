@@ -1,7 +1,8 @@
 from django.test import TestCase
+from django.core import mail
 
 from accounts.models import User
-from .models import Course, CourseChapter, CourseLesson, Favorite, Income, Order, TeacherProfile
+from .models import Course, CourseChapter, CourseLesson, Favorite, Income, Order, TeacherApplication, TeacherProfile
 
 
 class HealthCheckAPITests(TestCase):
@@ -85,5 +86,69 @@ class CoreModelTests(TestCase):
         self.assertEqual(order.pay_status, Order.PAY_PAID)
         self.assertEqual(str(income.platform_amount), '39.80')
         self.assertEqual(favorite.course, course)
+
+
+class TeacherApplicationAPITests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='applicant01',
+            nickname='认证用户',
+            email='applicant01@example.com',
+            phone='13400134000',
+            password='StrongPass123',
+        )
+        login_response = self.client.post('/api/auth/login/', data={
+            'username': 'applicant01',
+            'password': 'StrongPass123',
+        }, content_type='application/json')
+        self.client.defaults['HTTP_AUTHORIZATION'] = f"Bearer {login_response.json()['data']['access']}"
+
+    def test_user_can_submit_teacher_application_and_read_pending_status(self):
+        response = self.client.post('/api/teacher/applications/', data={
+            'real_name': '张老师',
+            'phone': '13400134000',
+            'email': 'teacher-result@example.com',
+            'bio': '十年教学经验',
+        }, content_type='application/json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['data']['status'], TeacherApplication.STATUS_PENDING)
+        self.assertEqual(response.json()['data']['notice'], '耐心等待2-3个工作日，结果会邮箱通知。')
+
+        status_response = self.client.get('/api/teacher/status/')
+        self.assertEqual(status_response.status_code, 200)
+        self.assertEqual(status_response.json()['data']['application_status'], TeacherApplication.STATUS_PENDING)
+        self.assertFalse(status_response.json()['data']['is_teacher'])
+
+    def test_approving_application_creates_teacher_profile_and_sends_email(self):
+        application = TeacherApplication.objects.create(
+            user=self.user,
+            real_name='张老师',
+            phone='13400134000',
+            email='teacher-result@example.com',
+            bio='十年教学经验',
+        )
+
+        application.approve('欢迎成为认证教师')
+
+        self.assertTrue(TeacherProfile.objects.filter(user=self.user, application=application).exists())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('审核通过', mail.outbox[0].subject)
+        self.assertEqual(mail.outbox[0].to, ['teacher-result@example.com'])
+
+    def test_rejecting_application_sends_email_without_creating_teacher_profile(self):
+        application = TeacherApplication.objects.create(
+            user=self.user,
+            real_name='张老师',
+            phone='13400134000',
+            email='teacher-result@example.com',
+        )
+
+        application.reject('资料不完整')
+
+        self.assertFalse(TeacherProfile.objects.filter(user=self.user).exists())
+        self.assertEqual(application.status, TeacherApplication.STATUS_REJECTED)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('审核未通过', mail.outbox[0].subject)
 
 # Create your tests here.

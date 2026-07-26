@@ -16,10 +16,17 @@ from .models import (
 
 
 class TeacherApplicationSerializer(serializers.ModelSerializer):
+    notice = serializers.SerializerMethodField()
+
     class Meta:
         model = TeacherApplication
         fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'status', 'review_note', 'created_at', 'updated_at', 'notice']
+
+    def get_notice(self, obj):
+        if obj.status == TeacherApplication.STATUS_PENDING:
+            return '耐心等待2-3个工作日，结果会邮箱通知。'
+        return ''
 
 
 class TeacherProfileSerializer(serializers.ModelSerializer):

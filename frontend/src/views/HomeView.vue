@@ -22,6 +22,7 @@ onMounted(() => {
         <RouterLink to="/register">注册</RouterLink>
         <RouterLink to="/login">登录</RouterLink>
         <RouterLink to="/profile">个人中心</RouterLink>
+        <RouterLink to="/teacher">教师中心</RouterLink>
       </nav>
     </section>
 

@@ -5,6 +5,8 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import RegisterView from '../views/RegisterView.vue'
+import TeacherApplicationView from '../views/TeacherApplicationView.vue'
+import TeacherCenterView from '../views/TeacherCenterView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -28,6 +30,18 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: ProfileView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/teacher/apply',
+      name: 'teacher-apply',
+      component: TeacherApplicationView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/teacher',
+      name: 'teacher-center',
+      component: TeacherCenterView,
       meta: { requiresAuth: true },
     },
   ],

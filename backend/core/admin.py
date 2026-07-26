@@ -29,6 +29,19 @@ class TeacherApplicationAdmin(BaseAdmin):
     list_filter = ['status', 'created_at']
     search_fields = ['user__username', 'user__nickname', 'real_name', 'phone', 'email']
     ordering = ['-created_at']
+    actions = ['approve_applications', 'reject_applications']
+
+    @admin.action(description='审核通过所选教师申请')
+    def approve_applications(self, request, queryset):
+        for application in queryset:
+            application.approve('管理员审核通过')
+        self.message_user(request, f'已通过 {queryset.count()} 条教师认证申请')
+
+    @admin.action(description='拒绝所选教师申请')
+    def reject_applications(self, request, queryset):
+        for application in queryset:
+            application.reject('管理员审核拒绝')
+        self.message_user(request, f'已拒绝 {queryset.count()} 条教师认证申请')
 
 
 @admin.register(TeacherProfile)

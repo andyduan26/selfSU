@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, watchEffect } from 'vue'
+import { computed, reactive, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
@@ -7,7 +7,8 @@ import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const { user, loading, error } = storeToRefs(authStore)
+const { user, teacherStatus, loading, error } = storeToRefs(authStore)
+const isTeacher = computed(() => teacherStatus.value?.is_teacher)
 
 const form = reactive({
   nickname: '',
@@ -24,6 +25,7 @@ watchEffect(() => {
 })
 
 authStore.fetchMe()
+authStore.fetchTeacherStatus()
 
 async function submitProfile() {
   await authStore.updateProfile(form)
@@ -42,6 +44,11 @@ function logout() {
       <h1>{{ user?.nickname || '用户资料' }}</h1>
       <button type="button" class="secondary-button" @click="logout">退出登录</button>
     </section>
+
+    <nav class="profile-actions" aria-label="教师功能">
+      <RouterLink v-if="isTeacher" to="/teacher">进入教师中心</RouterLink>
+      <RouterLink v-else to="/teacher/apply">申请认证教师</RouterLink>
+    </nav>
 
     <section v-if="user" class="profile-grid">
       <dl class="profile-details">
