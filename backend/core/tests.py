@@ -15,4 +15,13 @@ class HealthCheckAPITests(TestCase):
             },
         })
 
+
+class JWTEndpointTests(TestCase):
+    def test_token_endpoint_is_mounted(self):
+        response = self.client.post('/api/auth/token/', data={}, content_type='application/json')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('username', response.json())
+        self.assertIn('password', response.json())
+
 # Create your tests here.

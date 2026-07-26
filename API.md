@@ -24,3 +24,26 @@
   }
 }
 ```
+
+## JWT
+
+`POST /api/auth/token/`
+
+请求：
+
+```json
+{
+  "username": "admin",
+  "password": "your-password"
+}
+```
+
+`POST /api/auth/token/refresh/`
+
+请求：
+
+```json
+{
+  "refresh": "refresh-token"
+}
+```
