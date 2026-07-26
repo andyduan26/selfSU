@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from .models import Course, CourseLesson, Order, TeacherApplication, TeacherProfile
 from .serializers import CourseLessonSerializer, CourseSerializer, PublicTeacherSerializer, TeacherApplicationSerializer, TeacherCourseSerializer, TeacherProfileSerializer
+from .storage import R2ConfigurationError, create_r2_presigned_upload
 
 
 class HealthCheckAPIView(APIView):
@@ -182,5 +183,24 @@ class LessonPlayAPIView(APIView):
         if not can_play:
             return Response({'code': 403, 'message': '未购买课程只能试看', 'data': {'can_play': False}}, status=403)
         return Response({'code': 0, 'message': 'success', 'data': CourseLessonSerializer(lesson, context={'request': request}).data})
+
+
+class R2PresignedUploadAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        teacher = getattr(request.user, 'teacher_profile', None)
+        if not teacher or not teacher.is_active:
+            return Response({'code': 403, 'message': '请先申请认证教师', 'data': None}, status=403)
+        filename = request.data.get('filename', '')
+        content_type = request.data.get('content_type', 'application/octet-stream')
+        folder = request.data.get('folder', 'course-assets')
+        if not filename:
+            return Response({'code': 400, 'message': 'filename 必填', 'data': None}, status=400)
+        try:
+            data = create_r2_presigned_upload(filename, content_type, folder)
+        except R2ConfigurationError as error:
+            return Response({'code': 500, 'message': str(error), 'data': None}, status=500)
+        return Response({'code': 0, 'message': 'success', 'data': data})
 
 # Create your views here.

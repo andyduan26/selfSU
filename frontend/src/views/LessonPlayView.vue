@@ -24,7 +24,7 @@ onMounted(async () => {
     <section v-if="currentLesson" class="player-panel">
       <p class="eyebrow">视频播放</p>
       <h1>{{ currentLesson.title }}</h1>
-      <video v-if="currentLesson.video_file" :src="currentLesson.video_file" controls />
+      <video v-if="currentLesson.hls_url || currentLesson.video_file" :src="currentLesson.hls_url || currentLesson.video_file" controls />
       <p v-else class="summary">视频文件正在准备中。</p>
     </section>
     <section v-else class="player-panel">

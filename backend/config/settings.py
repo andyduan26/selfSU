@@ -163,3 +163,10 @@ SIMPLEUI_ANALYSIS = False
 
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@dongfangzhishiku.local')
+
+R2_ACCOUNT_ID = os.getenv('R2_ACCOUNT_ID', '')
+R2_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID', '')
+R2_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY', '')
+R2_BUCKET_NAME = os.getenv('R2_BUCKET_NAME', '')
+R2_PUBLIC_BASE_URL = os.getenv('R2_PUBLIC_BASE_URL', '')
+R2_UPLOAD_URL_EXPIRES = int(os.getenv('R2_UPLOAD_URL_EXPIRES', '3600'))

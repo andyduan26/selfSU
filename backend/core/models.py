@@ -152,9 +152,24 @@ class CourseChapter(TimeStampedModel):
 
 
 class CourseLesson(TimeStampedModel):
+    TRANSCODE_PENDING = 'pending'
+    TRANSCODE_PROCESSING = 'processing'
+    TRANSCODE_READY = 'ready'
+    TRANSCODE_FAILED = 'failed'
+    TRANSCODE_STATUS_CHOICES = [
+        (TRANSCODE_PENDING, '待转码'),
+        (TRANSCODE_PROCESSING, '转码中'),
+        (TRANSCODE_READY, '已完成'),
+        (TRANSCODE_FAILED, '转码失败'),
+    ]
+
     chapter = models.ForeignKey(CourseChapter, verbose_name='章节', on_delete=models.CASCADE, related_name='lessons')
     title = models.CharField('小节标题', max_length=120)
     video_file = models.CharField('视频文件', max_length=500, blank=True)
+    hls_url = models.CharField('HLS地址', max_length=500, blank=True)
+    duration = models.PositiveIntegerField('视频时长秒数', default=0)
+    resolution = models.CharField('视频分辨率', max_length=50, blank=True)
+    transcode_status = models.CharField('转码状态', max_length=20, choices=TRANSCODE_STATUS_CHOICES, default=TRANSCODE_PENDING)
     duration_seconds = models.PositiveIntegerField('视频时长秒数', default=0)
     is_trial = models.BooleanField('是否试看', default=False)
     sort_order = models.PositiveIntegerField('排序', default=0)

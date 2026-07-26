@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.core import mail
 from django.utils import timezone
+from unittest.mock import patch
 
 from accounts.models import User
 from .models import Course, CourseChapter, CourseLesson, Favorite, Income, Order, TeacherApplication, TeacherProfile
@@ -324,5 +325,56 @@ class TeacherCourseAPITests(TestCase):
         paid_allowed_response = self.client.get(f'/api/lessons/{paid.id}/play/')
         self.assertEqual(paid_allowed_response.status_code, 200)
         self.assertEqual(paid_allowed_response.json()['data']['video_file'], 'r2://paid.mp4')
+
+    @patch('core.views.create_r2_presigned_upload')
+    def test_certified_teacher_can_request_r2_presigned_upload(self, mock_presign):
+        mock_presign.return_value = {
+            'upload_url': 'https://r2.example.com/upload',
+            'public_url': 'https://cdn.example.com/covers/demo.jpg',
+            'object_key': 'course-covers/demo.jpg',
+        }
+        self.authenticate('course_teacher')
+
+        response = self.client.post('/api/uploads/r2/presign/', data={
+            'filename': 'demo.jpg',
+            'content_type': 'image/jpeg',
+            'folder': 'course-covers',
+        }, content_type='application/json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['data']['public_url'], 'https://cdn.example.com/covers/demo.jpg')
+        mock_presign.assert_called_once()
+
+    def test_lesson_play_response_includes_reserved_media_fields(self):
+        course = Course.objects.create(
+            teacher=self.teacher,
+            title='媒体字段课程',
+            cover='https://cdn.example.com/cover.jpg',
+            category='美学',
+            price='99.00',
+            suitable_audience='普通用户',
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        )
+        chapter = CourseChapter.objects.create(course=course, title='第一章', sort_order=1)
+        lesson = CourseLesson.objects.create(
+            chapter=chapter,
+            title='试看',
+            video_file='https://cdn.example.com/video.mp4',
+            hls_url='https://cdn.example.com/video/index.m3u8',
+            duration=120,
+            resolution='1080p',
+            transcode_status=CourseLesson.TRANSCODE_READY,
+            is_trial=True,
+            sort_order=1,
+        )
+
+        response = self.client.get(f'/api/lessons/{lesson.id}/play/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['data']['hls_url'], 'https://cdn.example.com/video/index.m3u8')
+        self.assertEqual(response.json()['data']['duration'], 120)
+        self.assertEqual(response.json()['data']['resolution'], '1080p')
+        self.assertEqual(response.json()['data']['transcode_status'], CourseLesson.TRANSCODE_READY)
 
 # Create your tests here.

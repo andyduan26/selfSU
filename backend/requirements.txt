@@ -4,3 +4,4 @@ django-simpleui==2026.1.13
 django-cors-headers==4.9.0
 djangorestframework-simplejwt==5.5.1
 django-import-export==4.4.1
+boto3==1.42.97

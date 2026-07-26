@@ -100,6 +100,24 @@ export const useAuthStore = defineStore('auth', {
     async deleteTeacherCourse(id) {
       await http.delete(`/teacher/courses/${id}/`)
     },
+    async createR2Upload(file, folder) {
+      const response = await http.post('/uploads/r2/presign/', {
+        filename: file.name,
+        content_type: file.type || 'application/octet-stream',
+        folder,
+      })
+      const uploadResponse = await fetch(response.data.data.upload_url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+        },
+        body: file,
+      })
+      if (!uploadResponse.ok) {
+        throw new Error('R2 文件上传失败')
+      }
+      return response.data.data.public_url
+    },
     async updateProfile(form) {
       this.loading = true
       this.error = ''

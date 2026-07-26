@@ -241,6 +241,37 @@ Authorization: Bearer access-token
 - 试看小节：未登录也可播放
 - 非试看小节：必须登录且已购买课程
 - 未购买访问非试看小节返回 `403`
+- 返回 `video_file`、`hls_url`、`duration`、`resolution`、`transcode_status`
+
+## Cloudflare R2 预签名上传
+
+`POST /api/uploads/r2/presign/`
+
+仅认证教师可调用。后端返回 R2 预签名 PUT 地址，前端直接把封面/视频上传到 R2，数据库保存 `public_url`。
+
+请求：
+
+```json
+{
+  "filename": "lesson.mp4",
+  "content_type": "video/mp4",
+  "folder": "course-videos"
+}
+```
+
+返回：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "upload_url": "https://...",
+    "public_url": "https://cdn.example.com/course-videos/xxx.mp4",
+    "object_key": "course-videos/xxx.mp4"
+  }
+}
+```
 
 `POST /api/auth/token/refresh/`
 

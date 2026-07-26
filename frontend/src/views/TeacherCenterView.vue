@@ -11,6 +11,7 @@ const applicationStatus = computed(() => teacherStatus.value?.application_status
 const courses = ref([])
 const editingId = ref(null)
 const courseForm = reactive(createEmptyCourse())
+const uploadMessage = ref('')
 
 function createEmptyCourse() {
   return {
@@ -102,6 +103,22 @@ async function submitCourse() {
   await loadCourses()
 }
 
+async function uploadCover(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  uploadMessage.value = '封面上传中'
+  courseForm.cover = await authStore.createR2Upload(file, 'course-covers')
+  uploadMessage.value = '封面已上传'
+}
+
+async function uploadLessonVideo(event, lesson) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  uploadMessage.value = '视频上传中，请保持页面打开'
+  lesson.video_file = await authStore.createR2Upload(file, 'course-videos')
+  uploadMessage.value = '视频已上传'
+}
+
 async function deleteCourse(course) {
   await authStore.deleteTeacherCourse(course.id)
   await loadCourses()
@@ -126,6 +143,11 @@ async function deleteCourse(course) {
           <span>封面地址</span>
           <input v-model="courseForm.cover" placeholder="后续接 Cloudflare R2 封面地址">
         </label>
+        <label>
+          <span>上传封面到 R2</span>
+          <input type="file" accept="image/*" @change="uploadCover">
+        </label>
+        <p v-if="uploadMessage" class="notice">{{ uploadMessage }}</p>
         <label>
           <span>分类</span>
           <input v-model="courseForm.category" required>
@@ -171,8 +193,12 @@ async function deleteCourse(course) {
               <input v-model="lesson.title" required>
             </label>
             <label>
-              <span>视频文件路径</span>
-              <input v-model="lesson.video_file" placeholder="后续接 Cloudflare R2 上传地址">
+              <span>视频文件 URL</span>
+              <input v-model="lesson.video_file" placeholder="上传后自动填入 R2 URL">
+            </label>
+            <label>
+              <span>上传视频到 R2</span>
+              <input type="file" accept="video/*" @change="uploadLessonVideo($event, lesson)">
             </label>
             <label class="check-field">
               <input v-model="lesson.is_trial" type="checkbox">
