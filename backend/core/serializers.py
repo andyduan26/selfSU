@@ -217,7 +217,7 @@ class WithdrawSerializer(serializers.ModelSerializer):
     class Meta:
         model = Withdraw
         fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'teacher', 'status', 'review_note', 'paid_at', 'created_at', 'updated_at']
 
 
 class CommentSerializer(serializers.ModelSerializer):

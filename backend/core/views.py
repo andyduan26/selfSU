@@ -2,6 +2,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 import requests
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -9,8 +10,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Course, CourseLesson, Order, TeacherApplication, TeacherProfile
-from .serializers import CourseLessonSerializer, CourseSerializer, OrderSerializer, PublicTeacherSerializer, TeacherApplicationSerializer, TeacherCourseSerializer, TeacherProfileSerializer
+from .models import Course, CourseLesson, Income, Order, TeacherApplication, TeacherProfile, Withdraw
+from .serializers import CourseLessonSerializer, CourseSerializer, OrderSerializer, PublicTeacherSerializer, TeacherApplicationSerializer, TeacherCourseSerializer, TeacherProfileSerializer, WithdrawSerializer
 from .alipay import AlipayAPIError, AlipayConfigurationError, create_alipay_precreate, verify_alipay_notify
 from .storage import R2ConfigurationError, create_r2_presigned_upload
 
@@ -257,6 +258,73 @@ class TeacherOrderListAPIView(APIView):
             return Response({'code': 403, 'message': '请先申请认证教师', 'data': None}, status=403)
         orders = Order.objects.filter(course__teacher=teacher).select_related('course__teacher', 'user').order_by('-created_at')
         return Response({'code': 0, 'message': 'success', 'data': OrderSerializer(orders, many=True).data})
+
+
+def get_active_teacher(user):
+    teacher = getattr(user, 'teacher_profile', None)
+    if not teacher or not teacher.is_active:
+        return None
+    return teacher
+
+
+def decimal_sum(queryset, field):
+    return queryset.aggregate(total=Sum(field))['total'] or Decimal('0.00')
+
+
+def get_teacher_income_summary(teacher):
+    total_income = decimal_sum(Income.objects.filter(teacher=teacher), 'teacher_amount')
+    withdrawn_amount = decimal_sum(
+        Withdraw.objects.filter(teacher=teacher, status__in=[Withdraw.STATUS_APPROVED, Withdraw.STATUS_PAID]),
+        'amount',
+    )
+    pending_amount = decimal_sum(Withdraw.objects.filter(teacher=teacher, status=Withdraw.STATUS_PENDING), 'amount')
+    available_amount = total_income - withdrawn_amount - pending_amount
+    if available_amount < Decimal('0.00'):
+        available_amount = Decimal('0.00')
+    return {
+        'total_income': total_income,
+        'available_amount': available_amount,
+        'withdrawn_amount': withdrawn_amount,
+        'pending_amount': pending_amount,
+    }
+
+
+class TeacherIncomeSummaryAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        teacher = get_active_teacher(request.user)
+        if not teacher:
+            return Response({'code': 403, 'message': '请先申请认证教师', 'data': None}, status=403)
+        summary = get_teacher_income_summary(teacher)
+        data = {key: f'{value:.2f}' for key, value in summary.items()}
+        return Response({'code': 0, 'message': 'success', 'data': data})
+
+
+class TeacherWithdrawListCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        teacher = get_active_teacher(request.user)
+        if not teacher:
+            return Response({'code': 403, 'message': '请先申请认证教师', 'data': None}, status=403)
+        withdraws = Withdraw.objects.filter(teacher=teacher).order_by('-created_at')
+        return Response({'code': 0, 'message': 'success', 'data': WithdrawSerializer(withdraws, many=True).data})
+
+    def post(self, request):
+        teacher = get_active_teacher(request.user)
+        if not teacher:
+            return Response({'code': 403, 'message': '请先申请认证教师', 'data': None}, status=403)
+        serializer = WithdrawSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        amount = serializer.validated_data['amount']
+        summary = get_teacher_income_summary(teacher)
+        if amount <= Decimal('0.00'):
+            return Response({'code': 400, 'message': '提现金额必须大于 0', 'data': None}, status=400)
+        if amount > summary['available_amount']:
+            return Response({'code': 400, 'message': '可提现余额不足', 'data': None}, status=400)
+        withdraw = serializer.save(teacher=teacher)
+        return Response({'code': 0, 'message': 'success', 'data': WithdrawSerializer(withdraw).data}, status=201)
 
 
 class AlipayPrecreateAPIView(APIView):

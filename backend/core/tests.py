@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.test import override_settings
 
 from accounts.models import User
-from .models import Course, CourseChapter, CourseLesson, Favorite, Income, Order, TeacherApplication, TeacherProfile
+from .models import Course, CourseChapter, CourseLesson, Favorite, Income, Order, TeacherApplication, TeacherProfile, Withdraw
 
 
 class HealthCheckAPITests(TestCase):
@@ -454,6 +454,88 @@ class CourseOrderAPITests(TestCase):
         order.mark_paid()
         allowed_response = self.client.get(f'/api/lessons/{paid.id}/play/')
         self.assertEqual(allowed_response.status_code, 200)
+        income = Income.objects.get(order=order)
+        self.assertEqual(str(income.gross_amount), '199.00')
+        self.assertEqual(str(income.platform_amount), '39.80')
+        self.assertEqual(str(income.teacher_amount), '159.20')
+
+    def test_teacher_income_summary_counts_total_available_and_withdrawn_amounts(self):
+        course, trial, paid = self.create_course_with_lessons('199.00')
+        paid_order = Order.objects.create(
+            order_no='INCOMEORDER202607270001',
+            user=self.student,
+            course=course,
+            amount='199.00',
+            pay_status=Order.PAY_PAID,
+            payment_method=Order.METHOD_ALIPAY,
+            paid_at=timezone.now(),
+        )
+        Income.objects.create(
+            teacher=self.teacher,
+            course=course,
+            order=paid_order,
+            gross_amount='199.00',
+            platform_amount='39.80',
+            teacher_amount='159.20',
+        )
+        Withdraw.objects.create(
+            teacher=self.teacher,
+            amount='59.20',
+            account_name='订单老师',
+            account_no='teacher@example.com',
+            status=Withdraw.STATUS_APPROVED,
+            paid_at=timezone.now(),
+        )
+
+        self.authenticate('order_teacher')
+        response = self.client.get('/api/teacher/income/summary/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['data']['total_income'], '159.20')
+        self.assertEqual(response.json()['data']['withdrawn_amount'], '59.20')
+        self.assertEqual(response.json()['data']['available_amount'], '100.00')
+
+    def test_teacher_can_create_withdraw_request_within_available_balance(self):
+        course, trial, paid = self.create_course_with_lessons('199.00')
+        paid_order = Order.objects.create(
+            order_no='WITHDRAWORDER202607270001',
+            user=self.student,
+            course=course,
+            amount='199.00',
+            pay_status=Order.PAY_PAID,
+            payment_method=Order.METHOD_ALIPAY,
+            paid_at=timezone.now(),
+        )
+        Income.objects.create(
+            teacher=self.teacher,
+            course=course,
+            order=paid_order,
+            gross_amount='199.00',
+            platform_amount='39.80',
+            teacher_amount='159.20',
+        )
+
+        self.authenticate('order_teacher')
+        response = self.client.post('/api/teacher/withdraws/', data={
+            'amount': '100.00',
+            'account_name': '订单老师',
+            'account_no': 'teacher@example.com',
+        }, content_type='application/json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['data']['status'], Withdraw.STATUS_PENDING)
+        self.assertEqual(Withdraw.objects.get().amount, 100)
+
+    def test_teacher_cannot_withdraw_more_than_available_balance(self):
+        self.authenticate('order_teacher')
+        response = self.client.post('/api/teacher/withdraws/', data={
+            'amount': '100.00',
+            'account_name': '订单老师',
+            'account_no': 'teacher@example.com',
+        }, content_type='application/json')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('可提现余额不足', response.json()['message'])
 
     def test_user_and_teacher_can_read_their_order_lists(self):
         course, trial, paid = self.create_course_with_lessons('99.00')

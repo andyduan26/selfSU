@@ -97,6 +97,18 @@ export const useAuthStore = defineStore('auth', {
       const response = await http.get('/teacher/orders/')
       return response.data.data
     },
+    async fetchTeacherIncomeSummary() {
+      const response = await http.get('/teacher/income/summary/')
+      return response.data.data
+    },
+    async fetchTeacherWithdraws() {
+      const response = await http.get('/teacher/withdraws/')
+      return response.data.data
+    },
+    async createTeacherWithdraw(payload) {
+      const response = await http.post('/teacher/withdraws/', payload)
+      return response.data.data
+    },
     async createTeacherCourse(payload) {
       const response = await http.post('/teacher/courses/', payload)
       return response.data.data

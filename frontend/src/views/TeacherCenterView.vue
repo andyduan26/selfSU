@@ -10,9 +10,18 @@ const isTeacher = computed(() => teacherStatus.value?.is_teacher)
 const applicationStatus = computed(() => teacherStatus.value?.application_status)
 const courses = ref([])
 const teacherOrders = ref([])
+const incomeSummary = ref(null)
+const withdraws = ref([])
 const editingId = ref(null)
 const courseForm = reactive(createEmptyCourse())
+const withdrawForm = reactive({
+  amount: '',
+  account_name: '',
+  account_no: '',
+})
 const uploadMessage = ref('')
+const withdrawMessage = ref('')
+const withdrawError = ref('')
 
 function createEmptyCourse() {
   return {
@@ -44,6 +53,8 @@ async function loadCourses() {
   if (isTeacher.value) {
     courses.value = await authStore.fetchTeacherCourses()
     teacherOrders.value = await authStore.fetchTeacherOrders()
+    incomeSummary.value = await authStore.fetchTeacherIncomeSummary()
+    withdraws.value = await authStore.fetchTeacherWithdraws()
   }
 }
 
@@ -125,6 +136,23 @@ async function deleteCourse(course) {
   await authStore.deleteTeacherCourse(course.id)
   await loadCourses()
 }
+
+async function submitWithdraw() {
+  withdrawMessage.value = ''
+  withdrawError.value = ''
+  try {
+    await authStore.createTeacherWithdraw(withdrawForm)
+    withdrawMessage.value = '提现申请已提交，请等待管理员审核。'
+    Object.assign(withdrawForm, {
+      amount: '',
+      account_name: '',
+      account_no: '',
+    })
+    await loadCourses()
+  } catch (error) {
+    withdrawError.value = error.response?.data?.message || '提现申请提交失败'
+  }
+}
 </script>
 
 <template>
@@ -135,6 +163,40 @@ async function deleteCourse(course) {
     </section>
 
     <section v-if="isTeacher" class="teacher-workspace">
+      <section class="income-panel">
+        <div>
+          <span>总收益</span>
+          <strong>¥ {{ incomeSummary?.total_income || '0.00' }}</strong>
+        </div>
+        <div>
+          <span>可提现</span>
+          <strong>¥ {{ incomeSummary?.available_amount || '0.00' }}</strong>
+        </div>
+        <div>
+          <span>已提现</span>
+          <strong>¥ {{ incomeSummary?.withdrawn_amount || '0.00' }}</strong>
+        </div>
+      </section>
+
+      <form class="course-editor withdraw-editor" @submit.prevent="submitWithdraw">
+        <h2>申请提现</h2>
+        <label>
+          <span>提现金额</span>
+          <input v-model="withdrawForm.amount" type="number" min="0.01" step="0.01" required>
+        </label>
+        <label>
+          <span>收款人</span>
+          <input v-model="withdrawForm.account_name" required>
+        </label>
+        <label>
+          <span>收款账号</span>
+          <input v-model="withdrawForm.account_no" required>
+        </label>
+        <button type="submit">提交提现申请</button>
+        <p v-if="withdrawMessage" class="notice">{{ withdrawMessage }}</p>
+        <p v-if="withdrawError" class="form-error">{{ withdrawError }}</p>
+      </form>
+
       <form class="course-editor" @submit.prevent="submitCourse">
         <h2>{{ editingId ? '编辑课程作品' : '新增课程作品' }}</h2>
         <label>
@@ -240,6 +302,17 @@ async function deleteCourse(course) {
           <div>
             <strong>{{ order.course_title }}</strong>
             <span>{{ order.order_no }} / {{ order.amount }} / {{ order.pay_status }} / {{ order.payment_method }}</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="course-list teacher-orders">
+        <h2>提现记录</h2>
+        <article v-for="withdraw in withdraws" :key="withdraw.id" class="course-item">
+          <div>
+            <strong>¥ {{ withdraw.amount }}</strong>
+            <span>{{ withdraw.account_name }} / {{ withdraw.account_no }} / {{ withdraw.status }}</span>
+            <small v-if="withdraw.review_note">审核备注：{{ withdraw.review_note }}</small>
           </div>
         </article>
       </section>

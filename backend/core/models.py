@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db import models
 from django.utils import timezone
+from decimal import Decimal
 
 
 class TimeStampedModel(models.Model):
@@ -223,6 +224,17 @@ class Order(TimeStampedModel):
         self.pay_status = self.PAY_PAID
         self.paid_at = timezone.now()
         self.save(update_fields=['pay_status', 'paid_at', 'updated_at'])
+        platform_amount = (self.amount * Decimal('0.20')).quantize(Decimal('0.01'))
+        Income.objects.get_or_create(
+            order=self,
+            defaults={
+                'teacher': self.course.teacher,
+                'course': self.course,
+                'gross_amount': self.amount,
+                'platform_amount': platform_amount,
+                'teacher_amount': self.amount - platform_amount,
+            },
+        )
 
 
 class Income(TimeStampedModel):
@@ -277,6 +289,17 @@ class Withdraw(TimeStampedModel):
 
     def __str__(self):
         return f'{self.teacher} - {self.amount}'
+
+    def approve(self, review_note=''):
+        self.status = self.STATUS_APPROVED
+        self.review_note = review_note
+        self.paid_at = timezone.now()
+        self.save(update_fields=['status', 'review_note', 'paid_at', 'updated_at'])
+
+    def reject(self, review_note=''):
+        self.status = self.STATUS_REJECTED
+        self.review_note = review_note
+        self.save(update_fields=['status', 'review_note', 'updated_at'])
 
 
 class Comment(TimeStampedModel):

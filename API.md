@@ -310,6 +310,39 @@ Authorization: Bearer access-token
 
 仅认证教师可访问，返回自己课程产生的订单数据。
 
+## 教师收益汇总
+
+`GET /api/teacher/income/summary/`
+
+仅认证教师可访问，返回：
+
+```json
+{
+  "total_income": "159.20",
+  "available_amount": "100.00",
+  "withdrawn_amount": "59.20",
+  "pending_amount": "0.00"
+}
+```
+
+## 教师提现
+
+`GET /api/teacher/withdraws/`
+
+查询当前教师自己的提现记录。
+
+`POST /api/teacher/withdraws/`
+
+提交提现申请。提现金额必须大于 0，且不能超过可提现余额。
+
+```json
+{
+  "amount": "100.00",
+  "account_name": "张老师",
+  "account_no": "teacher@example.com"
+}
+```
+
 ## 支付宝扫码预下单
 
 `POST /api/orders/{order_no}/alipay/precreate/`

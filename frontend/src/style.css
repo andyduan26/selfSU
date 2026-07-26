@@ -509,6 +509,35 @@ button:disabled {
   right: 12px;
 }
 
+.income-panel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  border: 1px solid #111;
+  background: #111;
+}
+
+.income-panel div {
+  display: grid;
+  gap: 12px;
+  background: #fff;
+  padding: 28px;
+}
+
+.income-panel span {
+  color: #666;
+  font-size: 13px;
+}
+
+.income-panel strong {
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.withdraw-editor {
+  margin-top: 32px;
+}
+
 .profile-details {
   display: grid;
   gap: 28px;
@@ -557,7 +586,8 @@ button:disabled {
   .teacher-workspace,
   .course-item,
   .course-grid,
-  .detail-hero {
+  .detail-hero,
+  .income-panel {
     grid-template-columns: 1fr;
   }
 }

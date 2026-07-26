@@ -15,8 +15,10 @@ from .views import (
     TeacherApplicationAPIView,
     TeacherCourseDetailAPIView,
     TeacherCourseListCreateAPIView,
+    TeacherIncomeSummaryAPIView,
     TeacherOrderListAPIView,
     TeacherStatusAPIView,
+    TeacherWithdrawListCreateAPIView,
 )
 
 
@@ -36,5 +38,7 @@ urlpatterns = [
     path('teacher/courses/', TeacherCourseListCreateAPIView.as_view(), name='teacher-course-list-create'),
     path('teacher/courses/<int:pk>/', TeacherCourseDetailAPIView.as_view(), name='teacher-course-detail'),
     path('teacher/orders/', TeacherOrderListAPIView.as_view(), name='teacher-order-list'),
+    path('teacher/income/summary/', TeacherIncomeSummaryAPIView.as_view(), name='teacher-income-summary'),
+    path('teacher/withdraws/', TeacherWithdrawListCreateAPIView.as_view(), name='teacher-withdraw-list-create'),
     path('teacher/status/', TeacherStatusAPIView.as_view(), name='teacher-status'),
 ]

@@ -117,6 +117,19 @@ class WithdrawAdmin(BaseAdmin):
     list_filter = ['status', 'paid_at', 'created_at']
     search_fields = ['teacher__display_name', 'teacher__user__username', 'account_name', 'account_no']
     ordering = ['-created_at']
+    actions = ['approve_withdraws', 'reject_withdraws']
+
+    @admin.action(description='审核通过所选提现')
+    def approve_withdraws(self, request, queryset):
+        for withdraw in queryset:
+            withdraw.approve('管理员审核通过')
+        self.message_user(request, f'已通过 {queryset.count()} 条提现申请')
+
+    @admin.action(description='拒绝所选提现')
+    def reject_withdraws(self, request, queryset):
+        for withdraw in queryset:
+            withdraw.reject('管理员审核拒绝')
+        self.message_user(request, f'已拒绝 {queryset.count()} 条提现申请')
 
 
 @admin.register(Comment)
