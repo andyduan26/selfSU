@@ -48,6 +48,7 @@ onMounted(() => {
         <RouterLink v-for="course in courses.slice(0, 6)" :key="course.id" class="course-card" :to="`/courses/${course.id}`">
           <img v-if="course.cover" :src="course.cover" :alt="course.title">
           <div v-else class="cover-fallback">{{ course.category }}</div>
+          <span class="favorite-badge">{{ course.is_favorited ? '已收藏' : `${course.favorite_count || 0} 收藏` }}</span>
           <span class="cover-title">{{ course.title }}</span>
         </RouterLink>
       </div>

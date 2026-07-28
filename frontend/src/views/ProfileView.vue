@@ -10,6 +10,7 @@ const authStore = useAuthStore()
 const { user, teacherStatus, loading, error } = storeToRefs(authStore)
 const isTeacher = computed(() => teacherStatus.value?.is_teacher)
 const orders = ref([])
+const favorites = ref([])
 
 const form = reactive({
   nickname: '',
@@ -29,6 +30,9 @@ authStore.fetchMe()
 authStore.fetchTeacherStatus()
 authStore.fetchMyOrders().then((data) => {
   orders.value = data
+})
+authStore.fetchMyFavorites().then((data) => {
+  favorites.value = data
 })
 
 async function submitProfile() {
@@ -104,6 +108,17 @@ function logout() {
           <span>{{ order.order_no }} / {{ order.amount }} / {{ order.pay_status }}</span>
         </div>
         <RouterLink class="inline-button" :to="`/courses/${order.course}`">查看课程</RouterLink>
+      </article>
+    </section>
+
+    <section class="orders-panel">
+      <h2>我的收藏</h2>
+      <article v-for="course in favorites" :key="course.id" class="order-item">
+        <div>
+          <strong>{{ course.title }}</strong>
+          <span>{{ course.category }} / ¥ {{ course.price }} / {{ course.favorite_count || 0 }} 收藏</span>
+        </div>
+        <RouterLink class="inline-button" :to="`/courses/${course.id}`">查看课程</RouterLink>
       </article>
     </section>
   </main>

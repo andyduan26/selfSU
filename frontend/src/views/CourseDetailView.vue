@@ -5,16 +5,25 @@ import { storeToRefs } from 'pinia'
 import QRCode from 'qrcode'
 
 import { useCourseStore } from '../stores/course'
+import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const courseStore = useCourseStore()
+const authStore = useAuthStore()
 const { currentCourse } = storeToRefs(courseStore)
+const { user, isAuthenticated } = storeToRefs(authStore)
 const orderMessage = ref('')
 const payError = ref('')
 const qrImage = ref('')
 const activeOrder = ref(null)
 const showPayModal = ref(false)
+const commentMessage = ref('')
+const commentError = ref('')
+const commentForm = ref({
+  rating: 5,
+  content: '',
+})
 let pollTimer = null
 
 onMounted(() => {
@@ -77,6 +86,33 @@ async function buyCourse() {
   }
 }
 
+async function submitComment() {
+  commentMessage.value = ''
+  commentError.value = ''
+  try {
+    await courseStore.createCourseComment(route.params.id, commentForm.value)
+    commentForm.value = { rating: 5, content: '' }
+    commentMessage.value = '评论已发布。'
+    await courseStore.fetchCourse(route.params.id)
+  } catch (error) {
+    commentError.value = error.response?.data?.message || '评论提交失败，请先登录后重试。'
+  }
+}
+
+async function deleteComment(comment) {
+  await courseStore.deleteCourseComment(comment.id)
+  await courseStore.fetchCourse(route.params.id)
+}
+
+async function toggleFavorite() {
+  if (!isAuthenticated.value) {
+    router.push({ name: 'login' })
+    return
+  }
+  await courseStore.toggleCourseFavorite(route.params.id)
+  await courseStore.fetchCourse(route.params.id)
+}
+
 onUnmounted(stopPolling)
 </script>
 
@@ -91,6 +127,9 @@ onUnmounted(stopPolling)
         <p class="summary">{{ currentCourse.summary }}</p>
         <p class="price">¥ {{ currentCourse.price }}</p>
         <RouterLink class="text-link" :to="`/teachers/${currentCourse.teacher.id}`">讲师：{{ currentCourse.teacher.display_name }}</RouterLink>
+        <button type="button" class="secondary-button" @click="toggleFavorite">
+          {{ currentCourse.is_favorited ? '取消收藏' : '收藏课程' }} · {{ currentCourse.favorite_count || 0 }}
+        </button>
         <button type="button" class="buy-button" @click="buyCourse">支付宝扫码支付</button>
         <p v-if="orderMessage" class="notice">{{ orderMessage }}</p>
         <p v-if="payError" class="form-error">{{ payError }}</p>
@@ -104,6 +143,33 @@ onUnmounted(stopPolling)
           <span>{{ lesson.title }} <small v-if="lesson.is_trial">试看</small></span>
           <RouterLink class="inline-button" :to="`/lessons/${lesson.id}/play`">{{ lesson.can_play ? '播放' : '试看' }}</RouterLink>
         </div>
+      </article>
+    </section>
+
+    <section class="comment-panel">
+      <h2>课程评论</h2>
+      <form v-if="isAuthenticated" class="comment-form" @submit.prevent="submitComment">
+        <label>
+          <span>评分</span>
+          <input v-model.number="commentForm.rating" type="number" min="1" max="5" required>
+        </label>
+        <label>
+          <span>内容</span>
+          <textarea v-model="commentForm.content" rows="4" required />
+        </label>
+        <button type="submit">发布评论</button>
+        <p v-if="commentMessage" class="notice">{{ commentMessage }}</p>
+        <p v-if="commentError" class="form-error">{{ commentError }}</p>
+      </form>
+      <RouterLink v-else class="text-link" to="/login">登录后评论</RouterLink>
+
+      <article v-for="comment in currentCourse.comments" :key="comment.id" class="comment-item">
+        <div>
+          <strong>{{ comment.user_nickname || comment.username }}</strong>
+          <span>{{ comment.rating }} 分 / {{ new Date(comment.created_at).toLocaleString('zh-CN') }}</span>
+        </div>
+        <p>{{ comment.content }}</p>
+        <button v-if="user?.id === comment.user" type="button" class="inline-button" @click="deleteComment(comment)">删除</button>
       </article>
     </section>
 

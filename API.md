@@ -227,6 +227,34 @@ Authorization: Bearer access-token
 `GET /api/courses/{id}/`
 
 只允许访问管理员审核通过且已发布的课程。返回课程封面、价格、讲师和章节目录；目录小节包含 `can_play`，用于判断当前用户是否可播放。
+同时返回 `comments`、`favorite_count` 和当前登录用户的 `is_favorited`。
+
+## 课程评论
+
+`POST /api/courses/{id}/comments/`
+
+登录用户可提交课程评论，提交后立即显示。
+
+```json
+{
+  "rating": 5,
+  "content": "课程很清晰"
+}
+```
+
+`DELETE /api/comments/{id}/`
+
+用户只能删除自己的评论。
+
+## 课程收藏
+
+`POST /api/courses/{id}/favorite/`
+
+登录用户收藏或取消收藏课程，重复调用会切换状态。
+
+`GET /api/favorites/`
+
+返回当前用户收藏的课程列表，用于个人中心“我的收藏”。
 
 ## 教师主页
 

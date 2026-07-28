@@ -80,6 +80,9 @@ class CourseChapterSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     chapters = serializers.SerializerMethodField()
     teacher = PublicTeacherSerializer(read_only=True)
+    comments = serializers.SerializerMethodField()
+    favorite_count = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
@@ -88,6 +91,19 @@ class CourseSerializer(serializers.ModelSerializer):
 
     def get_chapters(self, obj):
         return CourseChapterSerializer(obj.chapters.all(), many=True, context=self.context).data
+
+    def get_comments(self, obj):
+        comments = obj.comments.filter(is_visible=True).select_related('user').order_by('-created_at')
+        return CommentSerializer(comments, many=True).data
+
+    def get_favorite_count(self, obj):
+        return obj.favorites.count()
+
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.favorites.filter(user=request.user).exists()
 
 
 class TeacherCourseLessonInputSerializer(serializers.ModelSerializer):
@@ -221,10 +237,18 @@ class WithdrawSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    user_nickname = serializers.CharField(source='user.nickname', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+
     class Meta:
         model = Comment
         fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'course', 'is_visible', 'created_at', 'updated_at', 'user_nickname', 'username']
+
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError('评分必须在 1 到 5 之间')
+        return value
 
 
 class FavoriteSerializer(serializers.ModelSerializer):

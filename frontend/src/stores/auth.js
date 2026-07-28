@@ -93,6 +93,10 @@ export const useAuthStore = defineStore('auth', {
       const response = await http.get('/orders/')
       return response.data.data
     },
+    async fetchMyFavorites() {
+      const response = await http.get('/favorites/')
+      return response.data.data
+    },
     async fetchTeacherOrders() {
       const response = await http.get('/teacher/orders/')
       return response.data.data

@@ -383,6 +383,17 @@ button:disabled {
   opacity: 0;
 }
 
+.favorite-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: 1px solid #111;
+  background: #fff;
+  padding: 6px 10px;
+  color: #111;
+  font-size: 12px;
+}
+
 .course-card:hover .cover-title {
   opacity: 1;
 }
@@ -436,6 +447,52 @@ button:disabled {
 
 .lesson-list {
   padding-top: 48px;
+}
+
+.comment-panel {
+  border-top: 1px solid #111;
+  margin-top: 48px;
+  padding-top: 48px;
+}
+
+.comment-panel h2 {
+  margin: 0 0 28px;
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.comment-form {
+  display: grid;
+  gap: 18px;
+  max-width: 640px;
+  margin-bottom: 36px;
+}
+
+.comment-item {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid #ddd;
+  padding: 22px 0;
+}
+
+.comment-item div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.comment-item strong {
+  font-weight: 400;
+}
+
+.comment-item span {
+  color: #666;
+  font-size: 13px;
+}
+
+.comment-item p {
+  margin: 0;
+  line-height: 1.8;
 }
 
 .chapter-block {

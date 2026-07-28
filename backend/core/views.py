@@ -10,8 +10,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Course, CourseLesson, Income, Order, TeacherApplication, TeacherProfile, Withdraw
-from .serializers import CourseLessonSerializer, CourseSerializer, OrderSerializer, PublicTeacherSerializer, TeacherApplicationSerializer, TeacherCourseSerializer, TeacherProfileSerializer, WithdrawSerializer
+from .models import Comment, Course, CourseLesson, Favorite, Income, Order, TeacherApplication, TeacherProfile, Withdraw
+from .serializers import CommentSerializer, CourseLessonSerializer, CourseSerializer, OrderSerializer, PublicTeacherSerializer, TeacherApplicationSerializer, TeacherCourseSerializer, TeacherProfileSerializer, WithdrawSerializer
 from .alipay import AlipayAPIError, AlipayConfigurationError, create_alipay_precreate, verify_alipay_notify
 from .storage import R2ConfigurationError, create_r2_presigned_upload
 
@@ -168,6 +168,66 @@ class PublicTeacherDetailAPIView(APIView):
         data = PublicTeacherSerializer(teacher).data
         data['courses'] = CourseSerializer(courses, many=True, context={'request': request}).data
         return Response({'code': 0, 'message': 'success', 'data': data})
+
+
+def get_public_course(pk):
+    return get_object_or_404(
+        Course.objects.filter(
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        ),
+        pk=pk,
+    )
+
+
+class CourseCommentListCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        course = get_public_course(pk)
+        serializer = CommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        comment = serializer.save(user=request.user, course=course)
+        return Response({'code': 0, 'message': 'success', 'data': CommentSerializer(comment).data}, status=201)
+
+
+class CommentDeleteAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        comment = get_object_or_404(Comment, pk=pk, user=request.user)
+        comment.delete()
+        return Response(status=204)
+
+
+class CourseFavoriteToggleAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        course = get_public_course(pk)
+        favorite, created = Favorite.objects.get_or_create(user=request.user, course=course)
+        if not created:
+            favorite.delete()
+        return Response({
+            'code': 0,
+            'message': 'success',
+            'data': {
+                'is_favorited': created,
+                'favorite_count': course.favorites.count(),
+            },
+        })
+
+
+class MyFavoriteListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        courses = Course.objects.filter(
+            favorites__user=request.user,
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        ).select_related('teacher').prefetch_related('chapters__lessons', 'favorites', 'comments')
+        return Response({'code': 0, 'message': 'success', 'data': CourseSerializer(courses, many=True, context={'request': request}).data})
 
 
 class LessonPlayAPIView(APIView):

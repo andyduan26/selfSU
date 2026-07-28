@@ -57,5 +57,16 @@ export const useCourseStore = defineStore('course', {
       const response = await http.get(`/orders/${orderNo}/status/`)
       return response.data.data
     },
+    async createCourseComment(courseId, payload) {
+      const response = await http.post(`/courses/${courseId}/comments/`, payload)
+      return response.data.data
+    },
+    async deleteCourseComment(commentId) {
+      await http.delete(`/comments/${commentId}/`)
+    },
+    async toggleCourseFavorite(courseId) {
+      const response = await http.post(`/courses/${courseId}/favorite/`)
+      return response.data.data
+    },
   },
 })

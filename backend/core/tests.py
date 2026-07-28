@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.test import override_settings
 
 from accounts.models import User
-from .models import Course, CourseChapter, CourseLesson, Favorite, Income, Order, TeacherApplication, TeacherProfile, Withdraw
+from .models import Comment, Course, CourseChapter, CourseLesson, Favorite, Income, Order, TeacherApplication, TeacherProfile, Withdraw
 
 
 class HealthCheckAPITests(TestCase):
@@ -649,5 +649,108 @@ class CourseOrderAPITests(TestCase):
         self.assertEqual(notify_response.status_code, 200)
         self.assertEqual(notify_response.content.decode(), 'success')
         self.assertEqual(Order.objects.get(order_no=order_no).pay_status, Order.PAY_PAID)
+
+
+class CourseInteractionAPITests(TestCase):
+    def setUp(self):
+        self.teacher_user = User.objects.create_user(
+            username='interaction_teacher',
+            nickname='互动老师',
+            email='interaction_teacher@example.com',
+            phone='12300123000',
+            password='StrongPass123',
+        )
+        self.student = User.objects.create_user(
+            username='interaction_student',
+            nickname='互动学员',
+            email='interaction_student@example.com',
+            phone='12200122000',
+            password='StrongPass123',
+        )
+        self.other_student = User.objects.create_user(
+            username='other_interaction_student',
+            nickname='其他互动学员',
+            email='other_interaction_student@example.com',
+            phone='12100121000',
+            password='StrongPass123',
+        )
+        self.teacher = TeacherProfile.objects.create(user=self.teacher_user, display_name='互动老师')
+        self.course = Course.objects.create(
+            teacher=self.teacher,
+            title='互动课程',
+            category='互动',
+            price='99.00',
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        )
+
+    def authenticate(self, username):
+        response = self.client.post('/api/auth/login/', data={
+            'username': username,
+            'password': 'StrongPass123',
+        }, content_type='application/json')
+        self.client.defaults['HTTP_AUTHORIZATION'] = f"Bearer {response.json()['data']['access']}"
+
+    def test_logged_in_user_can_comment_and_comment_shows_on_course_detail(self):
+        self.authenticate('interaction_student')
+
+        response = self.client.post(f'/api/courses/{self.course.id}/comments/', data={
+            'rating': 5,
+            'content': '课程很清晰，提交后立即显示。',
+        }, content_type='application/json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['data']['content'], '课程很清晰，提交后立即显示。')
+        detail_response = self.client.get(f'/api/courses/{self.course.id}/')
+        self.assertEqual(detail_response.json()['data']['comments'][0]['content'], '课程很清晰，提交后立即显示。')
+        self.assertEqual(detail_response.json()['data']['comments'][0]['user_nickname'], '互动学员')
+
+    def test_user_can_delete_own_comment_but_not_others_comment(self):
+        comment = Comment.objects.create(user=self.student, course=self.course, rating=4, content='自己的评论')
+
+        self.authenticate('other_interaction_student')
+        forbidden_response = self.client.delete(f'/api/comments/{comment.id}/')
+        self.assertEqual(forbidden_response.status_code, 404)
+
+        self.authenticate('interaction_student')
+        deleted_response = self.client.delete(f'/api/comments/{comment.id}/')
+        self.assertEqual(deleted_response.status_code, 204)
+        self.assertFalse(Comment.objects.filter(id=comment.id).exists())
+
+    def test_user_can_toggle_favorite_and_course_serializes_favorite_state(self):
+        self.authenticate('interaction_student')
+
+        favorite_response = self.client.post(f'/api/courses/{self.course.id}/favorite/')
+        self.assertEqual(favorite_response.status_code, 200)
+        self.assertTrue(favorite_response.json()['data']['is_favorited'])
+        self.assertEqual(favorite_response.json()['data']['favorite_count'], 1)
+
+        detail_response = self.client.get(f'/api/courses/{self.course.id}/')
+        self.assertTrue(detail_response.json()['data']['is_favorited'])
+        self.assertEqual(detail_response.json()['data']['favorite_count'], 1)
+
+        unfavorite_response = self.client.post(f'/api/courses/{self.course.id}/favorite/')
+        self.assertEqual(unfavorite_response.status_code, 200)
+        self.assertFalse(unfavorite_response.json()['data']['is_favorited'])
+        self.assertEqual(unfavorite_response.json()['data']['favorite_count'], 0)
+
+    def test_profile_favorites_returns_current_user_courses(self):
+        Favorite.objects.create(user=self.student, course=self.course)
+        other_course = Course.objects.create(
+            teacher=self.teacher,
+            title='别人的收藏课程',
+            category='互动',
+            price='99.00',
+            audit_status=Course.AUDIT_APPROVED,
+            publish_status=Course.PUBLISH_PUBLISHED,
+        )
+        Favorite.objects.create(user=self.other_student, course=other_course)
+
+        self.authenticate('interaction_student')
+        response = self.client.get('/api/favorites/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()['data']), 1)
+        self.assertEqual(response.json()['data'][0]['title'], '互动课程')
 
 # Create your tests here.
