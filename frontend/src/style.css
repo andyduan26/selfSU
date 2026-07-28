@@ -1,7 +1,7 @@
 :root {
   color: #111;
   background: #fff;
-  font-family: "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,168 +16,248 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  background: #fff;
+}
+
+a,
+button,
+input,
+textarea {
+  transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease, opacity 160ms ease;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  width: 100%;
+  border: 1px solid #111;
+  border-radius: 0;
+  background: #111;
+  color: #fff;
+  padding: 13px 22px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #fff;
+  color: #111;
+}
+
+button:disabled {
+  border-color: #bbb;
+  background: #f5f5f5;
+  color: #777;
+  cursor: not-allowed;
 }
 
 #app {
   min-height: 100vh;
 }
 
-.home-page {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 64px;
-  align-items: end;
+.home-page,
+.auth-page,
+.profile-page,
+.catalog-page,
+.detail-page,
+.player-page {
   min-height: 100vh;
-  padding: 96px 8vw;
+  padding: 88px max(28px, 8vw);
   background: #fff;
 }
 
+.home-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 72px;
+  align-items: end;
+}
+
 .intro {
-  max-width: 760px;
+  max-width: 780px;
 }
 
 .eyebrow,
 .label {
-  margin: 0 0 20px;
+  margin: 0 0 18px;
   color: #666;
   font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
   letter-spacing: 0;
 }
 
 h1 {
-  max-width: 720px;
+  max-width: 780px;
   margin: 0;
   color: #111;
-  font-size: clamp(44px, 7vw, 92px);
-  font-weight: 400;
-  line-height: 1.06;
+  font-size: clamp(42px, 6.2vw, 88px);
+  font-weight: 500;
+  line-height: 1.04;
   letter-spacing: 0;
 }
 
+.auth-panel h1,
+.profile-header h1,
+.catalog-header h1,
+.player-panel h1 {
+  font-size: clamp(38px, 5vw, 72px);
+}
+
 .summary {
-  max-width: 560px;
-  margin: 32px 0 0;
+  max-width: 620px;
+  margin: 30px 0 0;
   color: #333;
   font-size: 18px;
-  line-height: 1.8;
+  line-height: 1.75;
+}
+
+.actions,
+.profile-actions,
+.category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 40px;
+  margin-top: 42px;
 }
 
 .actions a,
-button,
-.text-link {
+.profile-actions a,
+.text-link,
+.secondary-button,
+.inline-button,
+.category-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-height: 42px;
+  margin: 0;
   border: 1px solid #111;
   border-radius: 0;
   background: #fff;
   color: #111;
-  padding: 14px 22px;
+  padding: 11px 18px;
   font: inherit;
+  line-height: 1;
   text-decoration: none;
   cursor: pointer;
 }
 
-button {
-  width: 100%;
-  margin-top: 8px;
+.actions a:hover,
+.profile-actions a:hover,
+.text-link:hover,
+.secondary-button:hover,
+.inline-button:hover,
+.category-tabs button:hover {
+  background: #111;
+  color: #fff;
 }
 
-button:disabled {
-  color: #777;
-  border-color: #bbb;
-  cursor: not-allowed;
+.text-link {
+  margin-top: 24px;
+}
+
+.inline-button {
+  min-height: 34px;
+  padding: 8px 12px;
+  font-size: 13px;
 }
 
 .status-panel {
   border-top: 1px solid #111;
-  padding-top: 24px;
+  padding-top: 26px;
 }
 
 .status-panel strong {
   display: block;
-  margin-bottom: 12px;
-  font-size: 28px;
-  font-weight: 400;
+  margin-bottom: 10px;
+  font-size: 30px;
+  font-weight: 500;
 }
 
-.status-panel small {
+.status-panel small,
+.course-item span,
+.course-item small,
+.order-item span,
+.comment-item span,
+.income-panel span {
   color: #666;
-  font-size: 14px;
 }
 
-.error {
-  color: #8a1f11;
-}
-
-.auth-page,
-.profile-page {
-  min-height: 100vh;
-  padding: 80px 8vw;
-  background: #fff;
-}
-
-.auth-panel {
-  width: min(100%, 480px);
-}
-
-.auth-panel h1,
-.profile-header h1 {
-  font-size: clamp(40px, 6vw, 76px);
-}
-
-.form {
-  display: grid;
-  gap: 22px;
-  margin-top: 40px;
-}
-
-.form label {
-  display: grid;
-  gap: 8px;
-  color: #555;
-  font-size: 14px;
-}
-
-.form input {
-  width: 100%;
-  border: 0;
-  border-bottom: 1px solid #111;
-  border-radius: 0;
-  padding: 12px 0;
-  background: #fff;
-  color: #111;
-  font: inherit;
-  outline: none;
-}
-
-.form textarea {
-  width: 100%;
-  border: 1px solid #111;
-  border-radius: 0;
-  padding: 12px;
-  background: #fff;
-  color: #111;
-  font: inherit;
-  resize: vertical;
-}
-
+.error,
 .form-error {
   color: #8a1f11;
 }
 
-.text-link {
-  display: inline-block;
-  margin-top: 24px;
+.auth-panel {
+  width: min(100%, 500px);
+}
+
+.form,
+.course-editor,
+.comment-form {
+  display: grid;
+  gap: 22px;
+  margin-top: 42px;
+}
+
+.form label,
+.course-editor label,
+.comment-form label {
+  display: grid;
+  gap: 9px;
+  color: #555;
+  font-size: 14px;
+}
+
+.form input,
+.form textarea,
+.course-editor input,
+.course-editor textarea,
+.comment-form input,
+.comment-form textarea {
+  width: 100%;
+  border: 1px solid #d9d9d9;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+  padding: 13px 14px;
+  outline: none;
+}
+
+.form input:focus,
+.form textarea:focus,
+.course-editor input:focus,
+.course-editor textarea:focus,
+.comment-form input:focus,
+.comment-form textarea:focus {
+  border-color: #111;
+}
+
+.form textarea,
+.course-editor textarea,
+.comment-form textarea {
+  resize: vertical;
+  line-height: 1.7;
 }
 
 .buy-button {
   width: auto;
-  margin-top: 28px;
+  margin-top: 18px;
+}
+
+.profile-header,
+.catalog-header,
+.detail-hero {
+  border-bottom: 1px solid #111;
+  padding-bottom: 48px;
 }
 
 .profile-header {
@@ -185,32 +265,47 @@ button:disabled {
   align-items: end;
   justify-content: space-between;
   gap: 32px;
-  border-bottom: 1px solid #111;
-  padding-bottom: 40px;
 }
 
-.secondary-button {
-  width: auto;
+.profile-actions {
+  padding-top: 28px;
 }
 
 .profile-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
-  gap: 72px;
-  padding-top: 48px;
+  gap: 76px;
+  padding-top: 54px;
 }
 
-.profile-actions {
-  display: flex;
-  gap: 16px;
-  padding-top: 28px;
+.profile-details {
+  display: grid;
+  gap: 0;
+  margin: 0;
 }
 
-.profile-actions a {
-  border: 1px solid #111;
+.profile-details div,
+.order-item,
+.comment-item,
+.course-item,
+.chapter-block,
+.lesson-row {
+  border-top: 1px solid #e5e5e5;
+}
+
+.profile-details div {
+  padding: 20px 0;
+}
+
+.profile-details dt {
+  color: #666;
+  font-size: 13px;
+}
+
+.profile-details dd {
+  margin: 7px 0 0;
   color: #111;
-  padding: 14px 22px;
-  text-decoration: none;
+  font-size: 20px;
 }
 
 .teacher-panel {
@@ -223,9 +318,9 @@ button:disabled {
 
 .teacher-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr) 380px;
   gap: 56px;
-  padding-top: 48px;
+  padding-top: 50px;
 }
 
 .course-editor,
@@ -236,83 +331,61 @@ button:disabled {
   gap: 18px;
 }
 
-.course-editor label {
-  display: grid;
-  gap: 8px;
-  color: #555;
-  font-size: 14px;
-}
-
-.course-editor input,
-.course-editor textarea {
-  width: 100%;
-  border: 0;
-  border-bottom: 1px solid #111;
-  border-radius: 0;
-  padding: 12px 0;
-  background: #fff;
-  color: #111;
-  font: inherit;
+.course-editor,
+.course-list,
+.withdraw-editor {
+  align-self: start;
 }
 
 .chapter-editor,
-.lesson-editor,
-.course-item {
+.lesson-editor {
   border-top: 1px solid #111;
-  padding-top: 18px;
+  padding-top: 22px;
 }
 
 .editor-row,
 .course-item,
-.course-actions {
+.course-actions,
+.order-item,
+.comment-item div {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-}
-
-.inline-button {
-  width: auto;
-  margin: 0;
-  padding: 8px 12px;
-  font-size: 14px;
+  gap: 18px;
 }
 
 .check-field {
   display: flex !important;
-  grid-template-columns: none;
   align-items: center;
+  gap: 10px;
 }
 
 .check-field input {
   width: auto;
 }
 
+.course-item {
+  padding: 20px 0;
+}
+
 .course-item span,
-.course-item small {
-  display: block;
-  margin-top: 8px;
-  color: #666;
-}
-
-.orders-panel {
-  border-top: 1px solid #111;
-  margin-top: 56px;
-  padding-top: 32px;
-}
-
-.order-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  border-top: 1px solid #ddd;
-  padding: 18px 0;
-}
-
+.course-item small,
 .order-item span {
   display: block;
   margin-top: 8px;
-  color: #666;
+  font-size: 14px;
+}
+
+.orders-panel,
+.course-band,
+.comment-panel {
+  border-top: 1px solid #111;
+  margin-top: 58px;
+  padding-top: 36px;
+}
+
+.order-item {
+  padding: 20px 0;
 }
 
 .teacher-orders {
@@ -320,24 +393,20 @@ button:disabled {
 }
 
 .notice {
-  margin-top: 24px;
+  margin-top: 22px;
   color: #333;
-  line-height: 1.8;
-}
-
-.course-band {
-  grid-column: 1 / -1;
-  border-top: 1px solid #111;
-  padding-top: 48px;
+  line-height: 1.75;
 }
 
 .section-heading h2,
 .lesson-list h2,
 .course-editor h2,
-.course-list h2 {
+.course-list h2,
+.comment-panel h2 {
   margin: 0 0 28px;
-  font-size: 28px;
-  font-weight: 400;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.18;
 }
 
 .course-grid {
@@ -352,6 +421,7 @@ button:disabled {
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border: 1px solid #111;
+  background: #fff;
   color: #111;
   text-decoration: none;
 }
@@ -359,10 +429,19 @@ button:disabled {
 .course-card img,
 .detail-hero img,
 .player-panel video {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+}
+
+.course-card img {
+  transform: scale(1);
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.course-card:hover img {
+  transform: scale(1.015);
 }
 
 .cover-fallback {
@@ -370,7 +449,7 @@ button:disabled {
   place-items: center;
   width: 100%;
   height: 100%;
-  background: #f5f5f5;
+  background: #f7f7f7;
   color: #333;
 }
 
@@ -378,7 +457,7 @@ button:disabled {
   position: absolute;
   inset: auto 0 0;
   padding: 18px;
-  background: rgba(255, 255, 255, 0.92);
+  background: #fff;
   color: #111;
   opacity: 0;
 }
@@ -389,7 +468,7 @@ button:disabled {
   right: 12px;
   border: 1px solid #111;
   background: #fff;
-  padding: 6px 10px;
+  padding: 7px 10px;
   color: #111;
   font-size: 12px;
 }
@@ -398,29 +477,8 @@ button:disabled {
   opacity: 1;
 }
 
-.catalog-page,
-.detail-page,
-.player-page {
-  min-height: 100vh;
-  padding: 80px 8vw;
-}
-
-.catalog-header,
-.detail-hero {
-  border-bottom: 1px solid #111;
-  padding-bottom: 48px;
-}
-
 .category-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 32px 0;
-}
-
-.category-tabs button {
-  width: auto;
-  margin: 0;
+  margin: 34px 0;
 }
 
 .catalog-grid {
@@ -430,7 +488,7 @@ button:disabled {
 .detail-hero {
   display: grid;
   grid-template-columns: minmax(320px, 520px) minmax(0, 1fr);
-  gap: 56px;
+  gap: 60px;
   align-items: end;
 }
 
@@ -442,77 +500,26 @@ button:disabled {
 
 .price {
   margin: 28px 0 0;
-  font-size: 32px;
+  font-size: 34px;
+  font-weight: 500;
 }
 
 .lesson-list {
-  padding-top: 48px;
-}
-
-.comment-panel {
-  border-top: 1px solid #111;
-  margin-top: 48px;
-  padding-top: 48px;
-}
-
-.comment-panel h2 {
-  margin: 0 0 28px;
-  font-size: 28px;
-  font-weight: 400;
-}
-
-.comment-form {
-  display: grid;
-  gap: 18px;
-  max-width: 640px;
-  margin-bottom: 36px;
-}
-
-.comment-item {
-  display: grid;
-  gap: 12px;
-  border-top: 1px solid #ddd;
-  padding: 22px 0;
-}
-
-.comment-item div {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.comment-item strong {
-  font-weight: 400;
-}
-
-.comment-item span {
-  color: #666;
-  font-size: 13px;
-}
-
-.comment-item p {
-  margin: 0;
-  line-height: 1.8;
+  padding-top: 50px;
 }
 
 .chapter-block {
-  border-top: 1px solid #ddd;
-  padding: 24px 0;
+  padding: 26px 0;
 }
 
 .chapter-block h3 {
   margin: 0 0 16px;
   font-size: 22px;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .lesson-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  border-top: 1px solid #eee;
-  padding: 14px 0;
+  padding: 15px 0;
 }
 
 .lesson-row small {
@@ -520,14 +527,35 @@ button:disabled {
   color: #666;
 }
 
+.comment-form {
+  max-width: 680px;
+  margin-bottom: 38px;
+}
+
+.comment-item {
+  display: grid;
+  gap: 12px;
+  padding: 22px 0;
+}
+
+.comment-item strong {
+  font-weight: 500;
+}
+
+.comment-item p {
+  margin: 0;
+  line-height: 1.8;
+}
+
 .player-panel {
   display: grid;
-  gap: 24px;
+  gap: 26px;
 }
 
 .player-panel video {
   aspect-ratio: 16 / 9;
   height: auto;
+  border: 1px solid #111;
   background: #111;
 }
 
@@ -537,7 +565,7 @@ button:disabled {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.96);
   z-index: 20;
 }
 
@@ -546,13 +574,14 @@ button:disabled {
   width: min(100%, 420px);
   border: 1px solid #111;
   background: #fff;
-  padding: 40px;
+  padding: 42px;
   text-align: center;
 }
 
 .pay-dialog h2 {
   margin: 0 0 24px;
-  font-weight: 400;
+  font-size: 28px;
+  font-weight: 500;
 }
 
 .pay-dialog img {
@@ -578,73 +607,64 @@ button:disabled {
   display: grid;
   gap: 12px;
   background: #fff;
-  padding: 28px;
-}
-
-.income-panel span {
-  color: #666;
-  font-size: 13px;
+  padding: 30px;
 }
 
 .income-panel strong {
-  font-size: 28px;
-  font-weight: 400;
+  font-size: 30px;
+  font-weight: 500;
 }
 
 .withdraw-editor {
   margin-top: 32px;
 }
 
-.profile-details {
-  display: grid;
-  gap: 28px;
-  margin: 0;
-}
+@media (max-width: 980px) {
+  .home-page,
+  .teacher-workspace,
+  .detail-hero {
+    grid-template-columns: 1fr;
+  }
 
-.profile-details div {
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 18px;
-}
+  .home-page {
+    align-items: start;
+  }
 
-.profile-details dt {
-  color: #666;
-  font-size: 13px;
-}
-
-.profile-details dd {
-  margin: 8px 0 0;
-  color: #111;
-  font-size: 20px;
+  .course-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
-  .home-page {
-    grid-template-columns: 1fr;
-    gap: 48px;
-    align-items: start;
-    padding: 72px 24px;
-  }
-
+  .home-page,
   .auth-page,
-  .profile-page {
+  .profile-page,
+  .catalog-page,
+  .detail-page,
+  .player-page {
     padding: 56px 24px;
   }
 
   .profile-header,
-  .profile-grid {
+  .profile-grid,
+  .course-item,
+  .order-item,
+  .comment-item div,
+  .income-panel {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .profile-grid {
+  .profile-grid,
+  .teacher-workspace {
     gap: 40px;
   }
 
-  .teacher-workspace,
-  .course-item,
-  .course-grid,
-  .detail-hero,
-  .income-panel {
+  .course-grid {
     grid-template-columns: 1fr;
+  }
+
+  h1 {
+    font-size: 42px;
   }
 }
